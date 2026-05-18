@@ -1,22 +1,17 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Upload,
-  Plus,
   UserPlus,
   CheckSquare,
-  Square,
-  Check,
   Printer,
   Search,
-  Trash2,
-  Calendar,
 } from 'lucide-react';
 import { useElderlyStore } from '../store/elderlyStore';
 import { useActivityRecordStore } from '../store/activityRecordStore';
 import { useWeeklyPlanStore } from '../store/weeklyPlanStore';
 import { useActivityLibraryStore } from '../store/activityLibraryStore';
-import type { Elderly, ParticipationStatus, Weekday } from '../types';
-import { WEEKDAY_NAMES, DEFAULT_TIME_SLOTS } from '../types';
+import type { Elderly, ParticipationStatus } from '../types';
+import { DEFAULT_TIME_SLOTS } from '../types';
 import { getMonday, getWeekDates, readExcelFile, formatDate } from '../utils/helpers';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -24,7 +19,6 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import {
   SortableContext,
   useSortable,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -115,7 +109,7 @@ export default function ElderlyPage() {
   const [newRoom, setNewRoom] = useState('');
   const [newGroup, setNewGroup] = useState('');
   const [recordView, setRecordView] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate] = useState(new Date());
   const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
   const [cleanupCount, setCleanupCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -221,7 +215,7 @@ export default function ElderlyPage() {
   };
 
   const handleCleanup = async () => {
-    const count = await cleanupOldRecords();
+    await cleanupOldRecords();
     setShowCleanupConfirm(false);
   };
 
@@ -262,7 +256,7 @@ export default function ElderlyPage() {
   };
 
   if (loading && !loaded) {
-    return <LoadingSpinner text="加载老人数据..." />;
+    return <LoadingSpinner message="加载老人数据..." />;
   }
 
   return (

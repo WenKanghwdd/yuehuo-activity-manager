@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Download, Trash2, AlertTriangle, Database, Shield } from 'lucide-react';
-import { getAll } from '../db';
+import { getAll, clearStore } from '../db';
 import { useActivityRecordStore } from '../store/activityRecordStore';
 import { exportToExcel } from '../utils/helpers';
 import ConfirmDialog from '../components/common/ConfirmDialog';
@@ -55,7 +55,6 @@ export default function SettingsPage() {
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空所有数据吗？此操作不可撤销！')) return;
-    const { clearStore } = await import('../db');
     await clearStore('activityRecords');
     await clearStore('weeklyPlans');
     await clearStore('weeklyPlanCells');

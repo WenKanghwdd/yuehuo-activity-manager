@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Plus, X } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useActivityLibraryStore } from '../store/activityLibraryStore';
 import { ACTIVITY_TAGS, type ActivityTag } from '../types';
 import ActivityCard from '../components/activityLibrary/ActivityCard';

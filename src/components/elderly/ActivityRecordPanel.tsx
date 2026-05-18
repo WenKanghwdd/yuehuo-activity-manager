@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Printer,
   Calendar,
-  List,
   Clock,
 } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';

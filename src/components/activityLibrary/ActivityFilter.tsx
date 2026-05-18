@@ -19,7 +19,7 @@ export default function ActivityFilter({
   onClearFilters,
 }: ActivityFilterProps) {
   const [localSearch, setLocalSearch] = useState(searchQuery);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const debouncedSearch = useCallback(
     (value: string) => {
