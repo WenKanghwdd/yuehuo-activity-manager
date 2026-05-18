@@ -339,7 +339,7 @@ export default function WeeklyPlanPage() {
                       {/* ===== 活动名称（打印加粗放大） ===== */}
                       {activityName ? (
                         <div
-                          className="text-sm print:text-base font-semibold leading-tight mb-0.5"
+                          className="text-sm print:text-base font-semibold leading-tight mb-0.5 text-center"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (act) setDetailActivity(act);
@@ -365,7 +365,7 @@ export default function WeeklyPlanPage() {
                               (v) => updateCell(slotId, day as Weekday, { venue: v })
                             );
                           }}
-                          className="w-full text-left text-[10px] print:text-xs text-warm-500 print:text-gray-700 hover:text-warm-700 leading-tight flex items-center gap-0.5 print:no-underline"
+                          className="w-full text-center text-[10px] print:text-xs text-warm-500 print:text-gray-700 hover:text-warm-700 leading-tight flex items-center justify-center gap-0.5 print:no-underline"
                         >
                           <MapPin className="w-2.5 h-2.5 print:w-3 print:h-3 shrink-0" />
                           <span className="truncate">{cell?.venue || '点击选择场所'}</span>
