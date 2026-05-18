@@ -472,16 +472,17 @@ export default function WeeklyPlanPage() {
                         </button>
                       )}
 
-                      {/* 备注 — 可编辑 */}
-                      <input
-                        type="text"
+                      {/* 备注 — 可编辑，自动换行 */}
+                      <textarea
                         value={cell?.note || ''}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateCell(slotId, day as Weekday, { note: e.target.value })}
                         placeholder="提醒..."
-                        className={`w-full text-[10px] print:text-xs bg-transparent border-0 border-b border-dashed border-warm-200 outline-none p-0 mt-0.5 leading-tight focus:border-warm-400 print:border-0 ${
+                        rows={2}
+                        className={`w-full text-[10px] print:text-xs bg-transparent border-0 border-b border-dashed border-warm-200 outline-none p-0 mt-0.5 leading-tight resize-none focus:border-warm-400 print:border-0 ${
                           outdoor ? 'text-red-600 font-semibold' : 'text-warm-500 print:text-gray-700'
                         }`}
+                        style={{ minHeight: '24px', overflow: 'hidden' }}
                       />
                     </td>
                   );
