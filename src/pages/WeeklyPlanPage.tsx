@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Printer, Palette, X, Clock, Search } from 'lucide-react';
+import { Printer, Palette, X, Clock, Search, MapPin, Plus } from 'lucide-react';
 import { useWeeklyPlanStore } from '../store/weeklyPlanStore';
 import { useThemeStore } from '../store/themeStore';
 import { useActivityLibraryStore } from '../store/activityLibraryStore';
+import { useVenueStore } from '../store/venueStore';
 import { THEME_CONFIGS, WEEKDAY_NAMES } from '../types';
 import type { ThemeType, WeeklyPlanCell, Activity, Weekday, SlotId } from '../types';
 import { hasOutdoorKeyword } from '../utils/helpers';
@@ -17,6 +18,8 @@ export default function WeeklyPlanPage() {
     useWeeklyPlanStore();
   const { currentTheme, setTheme: setAppTheme } = useThemeStore();
   const { activities, loaded: libLoaded, loadActivities } = useActivityLibraryStore();
+  const venueStore = useVenueStore();
+  const [venueEditValue, setVenueEditValue] = useState('');
   const printRef = useRef<HTMLDivElement>(null);
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [pickSlot, setPickSlot] = useState<{ slotId: string; weekday: number } | null>(null);
@@ -48,8 +51,9 @@ export default function WeeklyPlanPage() {
 
   useEffect(() => {
     if (!libLoaded) loadActivities();
+    if (!venueStore.loaded) venueStore.loadAll();
     loadOrCreatePlan();
-  }, [loadOrCreatePlan, loadActivities, libLoaded]);
+  }, [loadOrCreatePlan, loadActivities, libLoaded, venueStore]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -73,10 +77,12 @@ export default function WeeklyPlanPage() {
 
   const handlePickActivity = (activity: Activity) => {
     if (!pickSlot) return;
+    // 检查是否有之前记住的场所
+    const savedVenue = venueStore.getActivityVenue(activity.id);
     updateCell(pickSlot.slotId, pickSlot.weekday as Weekday, {
       activityId: activity.id,
       customText: '',
-      venue: activity.venue || '',
+      venue: savedVenue || activity.venue || '',
     });
     setPickSlot(null);
     setSearchQuery('');
@@ -276,18 +282,23 @@ export default function WeeklyPlanPage() {
                         </div>
                       )}
 
-                      {/* ===== 活动场所（可点击编辑） ===== */}
+                      {/* ===== 活动场所（点击选择/编辑） ===== */}
                       {(cell?.venue || activityName) && (
-                        <input
-                          type="text"
-                          value={cell?.venue || ''}
-                          placeholder="点击添加场所"
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => {
-                            updateCell(slotId, day as Weekday, { venue: e.target.value });
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVenueEditValue(cell?.venue || '');
+                            venueStore.openVenueEditor(
+                              `${WEEKDAY_NAMES[day as Weekday]} ${SLOT_LABELS[slotId as SlotId]}`,
+                              cell?.venue || '',
+                              (v) => updateCell(slotId, day as Weekday, { venue: v })
+                            );
                           }}
-                          className="w-full text-[10px] text-warm-500 bg-transparent border-0 border-b border-dashed border-warm-200 outline-none p-0 leading-tight focus:border-warm-400 print:border-0"
-                        />
+                          className="w-full text-left text-[10px] text-warm-500 hover:text-warm-700 leading-tight flex items-center gap-0.5 print:no-underline"
+                        >
+                          <MapPin className="w-2.5 h-2.5 shrink-0" />
+                          <span className="truncate">{cell?.venue || '点击选择场所'}</span>
+                        </button>
                       )}
 
                       {/* 备注 */}
@@ -390,6 +401,78 @@ export default function WeeklyPlanPage() {
       {detailActivity && (
         <ActivityDetailModal activity={detailActivity} open={!!detailActivity}
           onClose={() => setDetailActivity(null)} />
+      )}
+
+      {/* ===== 场所选择弹窗 ===== */}
+      {/* ===== 场所选择弹窗 ===== */}
+      {venueStore.editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => venueStore.closeVenueEditor()}>
+          <div className="bg-white rounded-xl shadow-xl p-5 w-full max-w-sm mx-4"
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-warm-800 mb-3">
+              选择场所 — {venueStore.editing.slotLabel}
+            </h3>
+
+            {/* 当前值输入 */}
+            <input
+              type="text"
+              value={venueEditValue}
+              onChange={(e) => setVenueEditValue(e.target.value)}
+              placeholder="输入场所名称..."
+              autoFocus
+              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-warm-400 mb-3"
+            />
+
+            {/* 建议列表 */}
+            <div className="max-h-48 overflow-y-auto space-y-0.5 mb-3">
+              {[
+                ...new Set([
+                  ...activities.map((a) => a.venue).filter(Boolean),
+                  ...venueStore.suggestions,
+                ]),
+              ].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => {
+                    venueStore.editing?.onSave(v);
+                    venueStore.closeVenueEditor();
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    venueEditValue === v
+                      ? 'bg-warm-100 text-warm-800 font-medium'
+                      : 'hover:bg-warm-50 text-warm-600'
+                  }`}
+                >
+                  <MapPin className="w-3 h-3 inline mr-1.5" />
+                  {v}
+                </button>
+              ))}
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const val = venueEditValue.trim();
+                  if (val) {
+                    venueStore.addSuggestion(val);
+                    venueStore.editing?.onSave(val);
+                    venueStore.closeVenueEditor();
+                  }
+                }}
+                className="flex-1 px-3 py-2 bg-warm-500 text-white rounded-lg text-sm hover:bg-warm-600 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5 inline mr-1" />
+                确认
+              </button>
+              <button onClick={() => venueStore.closeVenueEditor()}
+                className="px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-600 hover:bg-warm-50 transition-colors">
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
