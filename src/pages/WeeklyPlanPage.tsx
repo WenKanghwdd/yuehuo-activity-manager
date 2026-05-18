@@ -15,7 +15,7 @@ const SLOT_LABELS: Record<SlotId, string> = { morning: '上午', afternoon: '下
 const SLOT_ORDER: SlotId[] = ['morning', 'afternoon']; // 上午、下午，晚上改为备注
 
 export default function WeeklyPlanPage() {
-  const { currentPlan, loaded, loading, loadOrCreatePlan, updateCell, setTheme, setTimeRange, batchSetTimeRange, clearCell, setRemarks } =
+  const { currentPlan, loaded, loading, loadOrCreatePlan, updateCell, setTheme, setTimeRange, batchSetTimeRange, clearCell, setDayNote } =
     useWeeklyPlanStore();
   const { currentTheme, setTheme: setAppTheme } = useThemeStore();
   const { activities, loaded: libLoaded, loadActivities } = useActivityLibraryStore();
@@ -153,6 +153,26 @@ export default function WeeklyPlanPage() {
         <button onClick={() => { syncUniTime(); setShowAllTimeEdit(true); }}
           className="flex items-center gap-1.5 px-3 py-2 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 text-sm text-warm-700 transition-colors">
           <Clock className="w-4 h-4" /> 统一设置时间
+        </button>
+        <button onClick={() => {
+          if (!currentPlan) return;
+          for (const d of [1,2,3,4,5,6,7]) {
+            const lines: string[] = [];
+            for (const s of ['morning', 'afternoon']) {
+              const cell = getCell(s, d);
+              if (!cell) continue;
+              const name = getActivityName(cell);
+              if (!name) continue;
+              const act = getActivity(cell);
+              const outdoor = hasOutdoorKeyword(name) || hasOutdoorKeyword(act?.safetyTips || '');
+              if (outdoor) lines.push(`⚠️ ${s === 'morning' ? '上午' : '下午'}"${name}"：外出活动需提前报名并获得家属同意`);
+              if (act?.safetyTips && !outdoor) lines.push(`• ${s === 'morning' ? '上午' : '下午'}"${name}"：${act.safetyTips}`);
+            }
+            setDayNote(d as Weekday, lines.join('\n'));
+          }
+        }}
+          className="flex items-center gap-1.5 px-3 py-2 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 text-sm text-warm-700 transition-colors">
+          自动备注
         </button>
         <button onClick={() => setShowResetConfirm(true)}
           className="flex items-center gap-1.5 px-3 py-2 bg-white border border-red-200 text-red-500 rounded-lg hover:bg-red-50 text-sm transition-colors">
@@ -419,52 +439,42 @@ export default function WeeklyPlanPage() {
                 })}
               </tr>
             ))}
+          {/* ===== 第三行：备注/提醒 ===== */}
+          <tr>
+            <td
+              className="p-2 text-center border align-middle"
+              style={{ backgroundColor: theme.bg, color: theme.cellText, borderColor: theme.border }}>
+              <div className="font-semibold text-xs print:text-sm">备注/提醒</div>
+            </td>
+            {([1, 2, 3, 4, 5, 6, 7] as const).map((day) => {
+              const note = currentPlan?.dayNotes?.[day] || '';
+              const outdoor = hasOutdoorKeyword(note);
+              return (
+                <td key={day}
+                  className="relative p-1 border align-top"
+                  style={{
+                    backgroundColor: theme.cellBg,
+                    color: theme.cellText,
+                    borderColor: theme.border,
+                    height: '100px',
+                    minHeight: '100px',
+                  }}
+                >
+                  <textarea
+                    value={note}
+                    onChange={(e) => setDayNote(day, e.target.value)}
+                    placeholder="备注/提醒..."
+                    className={`w-full h-full text-[11px] print:text-xs bg-transparent border-0 outline-none resize-none leading-tight ${
+                      outdoor ? 'text-red-600 font-semibold' : 'text-warm-600 print:text-gray-700'
+                    }`}
+                    style={{ minHeight: '80px' }}
+                  />
+                </td>
+              );
+            })}
+          </tr>
           </tbody>
         </table>
-
-        {/* ===== 备注/提醒 ===== */}
-        <div className="mt-3 print:mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs print:text-sm font-semibold text-warm-700 print:text-black">📋 备注 / 提醒</h3>
-            <button
-              onClick={() => {
-                if (!currentPlan) return;
-                // 自动生成：扫描所有活动
-                const lines: string[] = [];
-                const weekDays = [1,2,3,4,5,6,7];
-                const slotIds = ['morning', 'afternoon'];
-                for (const d of weekDays) {
-                  for (const s of slotIds) {
-                    const cell = getCell(s, d);
-                    if (!cell) continue;
-                    const name = getActivityName(cell);
-                    if (!name) continue;
-                    const act = getActivity(cell);
-                    const outdoor = hasOutdoorKeyword(name) || hasOutdoorKeyword(act?.safetyTips || '');
-                    if (outdoor) {
-                      lines.push(`⚠️ ${WEEKDAY_NAMES[d as Weekday]} ${s === 'morning' ? '上午' : '下午'} "${name}"：外出活动需提前报名并获得家属同意`);
-                    }
-                    if (act?.safetyTips && !outdoor) {
-                      lines.push(`• ${WEEKDAY_NAMES[d as Weekday]} ${s === 'morning' ? '上午' : '下午'} "${name}"：${act.safetyTips.substring(0, 30)}${act.safetyTips.length > 30 ? '...' : ''}`);
-                    }
-                  }
-                }
-                setRemarks(lines.length > 0 ? lines.join('\n') : '（暂无自动提醒）');
-              }}
-              className="text-[10px] text-warm-500 hover:text-warm-700 print:hidden"
-            >
-              自动生成
-            </button>
-          </div>
-          <textarea
-            value={currentPlan?.remarks || ''}
-            onChange={(e) => setRemarks(e.target.value)}
-            placeholder="点击「自动生成」根据活动内容生成提醒，也可手动编辑..."
-            rows={3}
-            className="w-full px-3 py-2 border border-warm-200 rounded-lg text-xs print:text-sm text-warm-700 outline-none focus:ring-2 focus:ring-warm-400 resize-none print:border-0 print:p-0 print:resize-none"
-            style={{ minHeight: '60px' }}
-          />
-        </div>
       </div>
 
       {/* ===== 活动选择弹窗 ===== */}

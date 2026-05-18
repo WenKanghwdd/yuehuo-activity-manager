@@ -13,7 +13,7 @@ interface WeeklyPlanState {
   setTheme: (theme: ThemeType) => Promise<void>;
   setTimeRange: (weekday: Weekday, slotId: SlotId, startTime: string, endTime: string) => Promise<void>;
   batchSetTimeRange: (slotId: SlotId, startTime: string, endTime: string) => Promise<void>;
-  setRemarks: (text: string) => Promise<void>;
+  setDayNote: (weekday: Weekday, text: string) => Promise<void>;
   clearCell: (timeSlotId: string, weekday: Weekday) => Promise<void>;
   getDayTimeConfig: (weekday: Weekday) => DayTimeConfig;
 }
@@ -41,13 +41,15 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
         6: { ...DEFAULT_DAY_TIME_CONFIG },
         7: { ...DEFAULT_DAY_TIME_CONFIG },
       };
+      const dayNotes = {} as Record<Weekday, string>;
+      [1,2,3,4,5,6,7].forEach(d => { dayNotes[d as Weekday] = ''; });
       plan = {
         id: generateId(),
         weekStart: start,
         cells: {},
         timeConfig,
+        dayNotes,
         theme: 'default',
-        remarks: '',
       };
       await putItem('weeklyPlans', plan);
     }
@@ -98,10 +100,11 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
     set({ currentPlan: updated });
   },
 
-  setRemarks: async (text) => {
+  setDayNote: async (weekday, text) => {
     const plan = get().currentPlan;
     if (!plan) return;
-    const updated = { ...plan, remarks: text };
+    const dayNotes = { ...plan.dayNotes, [weekday]: text };
+    const updated = { ...plan, dayNotes };
     await putItem('weeklyPlans', updated);
     set({ currentPlan: updated });
   },

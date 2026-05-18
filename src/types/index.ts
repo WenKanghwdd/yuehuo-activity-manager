@@ -50,7 +50,7 @@ export interface WeeklyPlan {
   cells: Record<string, WeeklyPlanCell>; // key: `${timeSlotId}-${weekday}`
   timeConfig: Record<Weekday, DayTimeConfig>; // per-day time range overrides
   theme: ThemeType;
-  remarks: string; // 备注/提醒
+  dayNotes: Record<Weekday, string>; // 每天备注/提醒
 }
 
 export type ThemeType = 'default' | 'springFestival' | 'qingming' | 'winterSolstice' | 'midAutumn' | 'dragonBoat' | 'nationalDay';
