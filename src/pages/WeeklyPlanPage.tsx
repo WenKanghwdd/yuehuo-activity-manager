@@ -196,9 +196,7 @@ export default function WeeklyPlanPage() {
         </button>
         <button onClick={() => {
           if (!currentPlan) return;
-          const allNotes: Record<number, string> = {};
-          for (const d of [1,2,3,4,5,6,7]) {
-            const lines: string[] = [];
+          for (const d of [1,2,3,4,5,6,7] as Weekday[]) {
             for (const s of ['morning', 'afternoon']) {
               const cell = getCell(s, d);
               if (!cell) continue;
@@ -206,18 +204,18 @@ export default function WeeklyPlanPage() {
               if (!name) continue;
               const act = getActivity(cell);
               const outdoor = hasOutdoorKeyword(name) || hasOutdoorKeyword(act?.safetyTips || '');
-              if (outdoor) lines.push(`⚠️外出需家属同意`);
-              if (act?.safetyTips && !outdoor) {
-                const short = act.safetyTips.replace(/[。；；：]/g, '，').split(/[，,]/)[0];
-                lines.push(`•${short.substring(0, 10)}`);
+              let note = '';
+              if (outdoor) note = '⚠️外出需同意';
+              else if (act?.safetyTips) {
+                const short = act.safetyTips.replace(/[。；]/g, '，').split(/[，,]/)[0];
+                note = short.substring(0, 10);
               }
+              if (note) updateCell(s, d, { note });
             }
-            allNotes[d] = lines.join('\n');
           }
-          batchSetDayNotes(allNotes as Record<Weekday, string>);
         }}
           className="flex items-center gap-1.5 px-3 py-2 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 text-sm text-warm-700 transition-colors">
-          自动备注
+          自动提醒
         </button>
         <button onClick={() => setShowResetConfirm(true)}
           className="flex items-center gap-1.5 px-3 py-2 bg-white border border-red-200 text-red-500 rounded-lg hover:bg-red-50 text-sm transition-colors">
@@ -355,13 +353,13 @@ export default function WeeklyPlanPage() {
 
                   return (
                     <td key={day}
-                      className="relative p-1.5 border align-top cursor-pointer print:h-[130px]"
+                      className="relative p-1.5 border align-top cursor-pointer print:h-[200px]"
                       style={{
                         backgroundColor: theme.cellBg,
                         color: theme.cellText,
                         borderColor: theme.border,
-                        height: '120px',
-                        minHeight: '120px',
+                        height: '180px',
+                        minHeight: '180px',
                       }}
                       onClick={() => { setPickSlot({ slotId, weekday: day }); setSearchQuery(''); }}
                     >
@@ -473,51 +471,22 @@ export default function WeeklyPlanPage() {
                         </button>
                       )}
 
-                      {/* 备注 — 打印红色突出 */}
-                      {cell?.note && (
-                        <div className={`text-[9px] print:text-xs leading-tight ${outdoor ? 'text-red-600 font-semibold' : 'text-warm-500 print:text-gray-600'}`}>
-                          {outdoor && '⚠️ '}{cell.note}
-                        </div>
-                      )}
+                      {/* 备注 — 可编辑 */}
+                      <input
+                        type="text"
+                        value={cell?.note || ''}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => updateCell(slotId, day as Weekday, { note: e.target.value })}
+                        placeholder="提醒..."
+                        className={`w-full text-[10px] print:text-xs bg-transparent border-0 border-b border-dashed border-warm-200 outline-none p-0 mt-0.5 leading-tight focus:border-warm-400 print:border-0 ${
+                          outdoor ? 'text-red-600 font-semibold' : 'text-warm-500 print:text-gray-700'
+                        }`}
+                      />
                     </td>
                   );
                 })}
               </tr>
             ))}
-          {/* ===== 第三行：备注/提醒 ===== */}
-          <tr>
-            <td
-              className="p-2 text-center border align-middle"
-              style={{ backgroundColor: theme.bg, color: theme.cellText, borderColor: theme.border }}>
-              <div className="font-semibold text-xs print:text-sm">备注/提醒</div>
-            </td>
-            {([1, 2, 3, 4, 5, 6, 7] as const).map((day) => {
-              const note = currentPlan?.dayNotes?.[day] || '';
-              const outdoor = hasOutdoorKeyword(note);
-              return (
-                <td key={day}
-                  className="relative p-1 border align-top"
-                  style={{
-                    backgroundColor: theme.cellBg,
-                    color: theme.cellText,
-                    borderColor: theme.border,
-                    height: '100px',
-                    minHeight: '100px',
-                  }}
-                >
-                  <textarea
-                    value={note}
-                    onChange={(e) => setDayNote(day, e.target.value)}
-                    placeholder="备注/提醒..."
-                    className={`w-full h-full text-[11px] print:text-xs bg-transparent border-0 outline-none resize-none leading-tight ${
-                      outdoor ? 'text-red-600 font-semibold' : 'text-warm-600 print:text-gray-700'
-                    }`}
-                    style={{ minHeight: '80px' }}
-                  />
-                </td>
-              );
-            })}
-          </tr>
           </tbody>
         </table>
       </div>
