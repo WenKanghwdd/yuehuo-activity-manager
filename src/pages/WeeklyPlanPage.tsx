@@ -32,11 +32,25 @@ export default function WeeklyPlanPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingImageSlot, setPendingImageSlot] = useState<{ slotId: string; weekday: number } | null>(null);
 
+  // 保存图片到活动记忆
+  const saveImageToActivity = (slotId: string, weekday: number, data: string) => {
+    const cell = getCell(slotId, weekday);
+    if (cell?.activityId) {
+      venueStore.setActivityVenue(cell.activityId + '_img', data);
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, slotId: string, weekday: number) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (ev) => { if (ev.target?.result) updateCell(slotId, weekday as Weekday, { imageBase64: ev.target.result as string }); };
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          const data = ev.target.result as string;
+          updateCell(slotId, weekday as Weekday, { imageBase64: data });
+          saveImageToActivity(slotId, weekday, data);
+        }
+      };
       reader.readAsDataURL(file);
     }
     e.target.value = '';
@@ -45,6 +59,7 @@ export default function WeeklyPlanPage() {
   const handlePickPresetImage = (data: string) => {
     if (showImageGallery) {
       updateCell(showImageGallery.slotId, showImageGallery.weekday as Weekday, { imageBase64: data });
+      saveImageToActivity(showImageGallery.slotId, showImageGallery.weekday, data);
       setShowImageGallery(null);
     }
   };
@@ -97,15 +112,40 @@ export default function WeeklyPlanPage() {
   const getActivity = (cell?: WeeklyPlanCell): Activity | undefined =>
     cell?.activityId ? activities.find((a) => a.id === cell.activityId) : undefined;
 
+  // 根据活动名称/标签匹配预设图片
+  const matchPresetImage = (activity: Activity): string | null => {
+    const name = activity.name.toLowerCase();
+    const tags = activity.tags.map(t => t.toLowerCase());
+    for (const img of PRESET_IMAGES) {
+      const key = img.name.toLowerCase();
+      if (name.includes(key) || tags.includes(key)) return img.data;
+      // 关键词扩展匹配
+      if (key === '运动' && (name.includes('太极') || name.includes('健身') || name.includes('操'))) return img.data;
+      if (key === '唱歌' && (name.includes('合唱') || name.includes('歌') || name.includes('音乐'))) return img.data;
+      if (key === '户外' && (name.includes('外出') || name.includes('公园') || name.includes('散步') || name.includes('出游'))) return img.data;
+      if (key === '棋牌' && (name.includes('棋') || name.includes('牌') || name.includes('麻将'))) return img.data;
+      if (key === '园艺' && (name.includes('园') || name.includes('种植'))) return img.data;
+      if (key === '讲座' && (name.includes('讲座') || name.includes('养生') || name.includes('健康'))) return img.data;
+    }
+    return null;
+  };
+
   const handlePickActivity = (activity: Activity) => {
     if (!pickSlot) return;
-    // 检查是否有之前记住的场所
     const savedVenue = venueStore.getActivityVenue(activity.id);
+    const matchedImage = matchPresetImage(activity);
+    // 看看之前有没有记住的图片
+    const savedImage = venueStore.getActivityVenue(activity.id + '_img');
     updateCell(pickSlot.slotId, pickSlot.weekday as Weekday, {
       activityId: activity.id,
       customText: '',
       venue: savedVenue || activity.venue || '',
+      imageBase64: savedImage || matchedImage || '',
     });
+    // 记住自动匹配的图片
+    if (matchedImage && !savedImage) {
+      venueStore.setActivityVenue(activity.id + '_img', matchedImage);
+    }
     setPickSlot(null);
     setSearchQuery('');
   };
@@ -166,8 +206,11 @@ export default function WeeklyPlanPage() {
               if (!name) continue;
               const act = getActivity(cell);
               const outdoor = hasOutdoorKeyword(name) || hasOutdoorKeyword(act?.safetyTips || '');
-              if (outdoor) lines.push(`⚠️ ${s === 'morning' ? '上午' : '下午'}"${name}"：外出活动需提前报名并获得家属同意`);
-              if (act?.safetyTips && !outdoor) lines.push(`• ${s === 'morning' ? '上午' : '下午'}"${name}"：${act.safetyTips}`);
+              if (outdoor) lines.push(`⚠️外出需家属同意`);
+              if (act?.safetyTips && !outdoor) {
+                const short = act.safetyTips.replace(/[。；；：]/g, '，').split(/[，,]/)[0];
+                lines.push(`•${short.substring(0, 10)}`);
+              }
             }
             allNotes[d] = lines.join('\n');
           }
