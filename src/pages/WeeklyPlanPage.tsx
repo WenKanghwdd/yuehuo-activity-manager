@@ -497,21 +497,23 @@ export default function WeeklyPlanPage() {
           <div className="flex items-center justify-center gap-2 mb-1">
             <span className="text-xl print:text-2xl font-black text-warm-700 print:text-black" style={{fontFamily:"Microsoft YaHei,MicrosoftYaHei,sans-serif"}}>🌤 天气变化提醒</span>
           </div>
-          <textarea
-            value={currentPlan?.weatherReminder || ''}
-            onChange={(e) => {
+          <div
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={(e) => {
               if (currentPlan) {
                 import('../db').then(({ putItem }) => {
-                  putItem('weeklyPlans', { ...currentPlan, weatherReminder: e.target.value }).then(() => {
+                  putItem('weeklyPlans', { ...currentPlan, weatherReminder: e.currentTarget.textContent || '' }).then(() => {
                     loadOrCreatePlan(currentPlan.weekStart);
                   });
                 });
               }
             }}
-            placeholder="输入天气变化提醒，如：本周三有降温，注意添衣..."
-            rows={2}
-            className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm print:text-base text-warm-700 outline-none focus:ring-2 focus:ring-warm-400 resize-vertical print:border print:border-gray-300"
-          />
+            className="w-full text-center text-xl print:text-2xl font-black text-warm-700 print:text-black outline-none"
+            style={{fontFamily:'SimSun,serif', minHeight:'1.5em'}}
+          >
+            {currentPlan?.weatherReminder || '点击此处添加天气变化提醒...'}
+          </div>
         </div>
       </div>
 
