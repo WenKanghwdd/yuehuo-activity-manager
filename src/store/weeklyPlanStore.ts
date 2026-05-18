@@ -14,6 +14,7 @@ interface WeeklyPlanState {
   setTimeRange: (weekday: Weekday, slotId: SlotId, startTime: string, endTime: string) => Promise<void>;
   batchSetTimeRange: (slotId: SlotId, startTime: string, endTime: string) => Promise<void>;
   setDayNote: (weekday: Weekday, text: string) => Promise<void>;
+  batchSetDayNotes: (notes: Record<Weekday, string>) => Promise<void>;
   clearCell: (timeSlotId: string, weekday: Weekday) => Promise<void>;
   getDayTimeConfig: (weekday: Weekday) => DayTimeConfig;
 }
@@ -104,6 +105,15 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
     const plan = get().currentPlan;
     if (!plan) return;
     const dayNotes = { ...plan.dayNotes, [weekday]: text };
+    const updated = { ...plan, dayNotes };
+    await putItem('weeklyPlans', updated);
+    set({ currentPlan: updated });
+  },
+
+  batchSetDayNotes: async (notes) => {
+    const plan = get().currentPlan;
+    if (!plan) return;
+    const dayNotes = { ...plan.dayNotes, ...notes };
     const updated = { ...plan, dayNotes };
     await putItem('weeklyPlans', updated);
     set({ currentPlan: updated });

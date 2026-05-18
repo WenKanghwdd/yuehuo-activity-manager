@@ -15,7 +15,7 @@ const SLOT_LABELS: Record<SlotId, string> = { morning: '上午', afternoon: '下
 const SLOT_ORDER: SlotId[] = ['morning', 'afternoon']; // 上午、下午，晚上改为备注
 
 export default function WeeklyPlanPage() {
-  const { currentPlan, loaded, loading, loadOrCreatePlan, updateCell, setTheme, setTimeRange, batchSetTimeRange, clearCell, setDayNote } =
+  const { currentPlan, loaded, loading, loadOrCreatePlan, updateCell, setTheme, setTimeRange, batchSetTimeRange, clearCell, setDayNote, batchSetDayNotes } =
     useWeeklyPlanStore();
   const { currentTheme, setTheme: setAppTheme } = useThemeStore();
   const { activities, loaded: libLoaded, loadActivities } = useActivityLibraryStore();
@@ -156,6 +156,7 @@ export default function WeeklyPlanPage() {
         </button>
         <button onClick={() => {
           if (!currentPlan) return;
+          const allNotes: Record<number, string> = {};
           for (const d of [1,2,3,4,5,6,7]) {
             const lines: string[] = [];
             for (const s of ['morning', 'afternoon']) {
@@ -168,8 +169,9 @@ export default function WeeklyPlanPage() {
               if (outdoor) lines.push(`⚠️ ${s === 'morning' ? '上午' : '下午'}"${name}"：外出活动需提前报名并获得家属同意`);
               if (act?.safetyTips && !outdoor) lines.push(`• ${s === 'morning' ? '上午' : '下午'}"${name}"：${act.safetyTips}`);
             }
-            setDayNote(d as Weekday, lines.join('\n'));
+            allNotes[d] = lines.join('\n');
           }
+          batchSetDayNotes(allNotes as Record<Weekday, string>);
         }}
           className="flex items-center gap-1.5 px-3 py-2 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 text-sm text-warm-700 transition-colors">
           自动备注
