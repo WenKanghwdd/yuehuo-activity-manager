@@ -67,8 +67,9 @@ export default function ActivityFormModal({
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        if (ev.target && ev.target.result) {
-          setImages((prev) => [...prev, ev.target.result as string]);
+        const result = (ev.target as FileReader)?.result;
+        if (result) {
+          setImages((prev) => [...prev, result as string]);
         }
       };
       reader.readAsDataURL(file);

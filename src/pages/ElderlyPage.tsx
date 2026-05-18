@@ -194,14 +194,6 @@ export default function ElderlyPage() {
     setShowAddForm(false);
   };
 
-  const handleBatchStatus = async (status: ParticipationStatus) => {
-    if (selectedIds.length === 0) return;
-    // Mark for today
-    const today = new Date().toISOString().split('T')[0];
-    await batchSetStatus(selectedIds, today, 'morning-1', '批量标记', status);
-    deselectAll();
-  };
-
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
