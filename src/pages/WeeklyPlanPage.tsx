@@ -288,7 +288,7 @@ export default function WeeklyPlanPage() {
 
       {/* ===== 周计划表（打印区域，含标题） ===== */}
       <div ref={printRef}
-        className="w-full max-w-[297mm] mx-auto print:pt-[2cm] print:pb-[2cm]"
+        className="w-full max-w-[297mm] mx-auto print:pt-[1.25cm] print:pb-[2cm]"
         style={{ minWidth: '700px', backgroundColor: theme.bg }}>
 
         {/* 周计划标题 */}
