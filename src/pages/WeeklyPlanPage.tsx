@@ -9,6 +9,7 @@ import type { ThemeType, WeeklyPlanCell, Activity, Weekday, SlotId } from '../ty
 import { hasOutdoorKeyword } from '../utils/helpers';
 import { useReactToPrint } from 'react-to-print';
 import ActivityDetailModal from '../components/activityLibrary/ActivityDetailModal';
+import { PRESET_IMAGES } from '../utils/presetImages';
 
 const SLOT_LABELS: Record<SlotId, string> = { morning: '上午', afternoon: '下午', evening: '晚上' };
 const SLOT_ORDER: SlotId[] = ['morning', 'afternoon', 'evening'];
@@ -26,6 +27,26 @@ export default function WeeklyPlanPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [detailActivity, setDetailActivity] = useState<Activity | null>(null);
   const [showAllTimeEdit, setShowAllTimeEdit] = useState(false);
+  const [showImageGallery, setShowImageGallery] = useState<{ slotId: string; weekday: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingImageSlot, setPendingImageSlot] = useState<{ slotId: string; weekday: number } | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, slotId: string, weekday: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => { if (ev.target?.result) updateCell(slotId, weekday as Weekday, { imageBase64: ev.target.result as string }); };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
+
+  const handlePickPresetImage = (data: string) => {
+    if (showImageGallery) {
+      updateCell(showImageGallery.slotId, showImageGallery.weekday as Weekday, { imageBase64: data });
+      setShowImageGallery(null);
+    }
+  };
 
   // Removed per-cell time editing; time only shown in left column
 
@@ -251,6 +272,56 @@ export default function WeeklyPlanPage() {
                       }}
                       onClick={() => { setPickSlot({ slotId, weekday: day }); setSearchQuery(''); }}
                     >
+                      {/* ===== 图片占位符（120x80） ===== */}
+                      <div className="mb-1 no-print">
+                        {cell?.imageBase64 ? (
+                          <div className="relative group">
+                            <img src={cell.imageBase64} alt="活动图片"
+                              className="w-full h-[60px] object-cover rounded border"
+                              style={{ borderColor: theme.border }} />
+                            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 group-hover:bg-black/30 transition-colors print:hidden">
+                              <button onClick={(e) => { e.stopPropagation();
+                                const input = document.createElement('input');
+                                input.type = 'file'; input.accept = 'image/*';
+                                input.onchange = (ev: any) => handleImageUpload(ev, slotId, day);
+                                input.click();
+                              }}
+                                className="opacity-0 group-hover:opacity-100 px-2 py-0.5 bg-white/90 text-[10px] rounded">
+                                更换
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); updateCell(slotId, day as Weekday, { imageBase64: null }); }}
+                                className="opacity-0 group-hover:opacity-100 px-2 py-0.5 bg-red-500/90 text-white text-[10px] rounded">
+                                删除
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1">
+                            <button onClick={(e) => {
+                              e.stopPropagation();
+                              const input = document.createElement('input');
+                              input.type = 'file'; input.accept = 'image/*';
+                              input.onchange = (ev: any) => handleImageUpload(ev, slotId, day);
+                              input.click();
+                            }}
+                              className="flex-1 py-1 border border-dashed border-warm-300 rounded text-[9px] text-warm-400 hover:text-warm-600 hover:border-warm-500 transition-colors">
+                              + 上传
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); setShowImageGallery({ slotId, weekday: day }); }}
+                              className="flex-1 py-1 border border-dashed border-warm-300 rounded text-[9px] text-warm-400 hover:text-warm-600 hover:border-warm-500 transition-colors">
+                              🖼 图库
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 打印时显示图片 */}
+                      {cell?.imageBase64 && (
+                        <div className="hidden print:block mb-1">
+                          <img src={cell.imageBase64} alt="" className="w-full h-16 object-cover rounded border" />
+                        </div>
+                      )}
+
                       {/* 移除按钮 — 有活动时显示 */}
                       {occupied && (
                         <button
@@ -306,13 +377,6 @@ export default function WeeklyPlanPage() {
                         <div className={`text-[9px] print:text-xs leading-tight ${outdoor ? 'text-red-600 font-semibold' : 'text-warm-500 print:text-gray-600'}`}>
                           {outdoor && '⚠️ '}{cell.note}
                         </div>
-                      )}
-
-                      {/* 图片 */}
-                      {cell?.imageBase64 && (
-                        <img src={cell.imageBase64} alt="活动图片"
-                          className="mt-0.5 w-full h-10 object-cover rounded border"
-                          style={{ borderColor: theme.border }} />
                       )}
                     </td>
                   );
@@ -471,6 +535,41 @@ export default function WeeklyPlanPage() {
                 取消
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 图片库选择弹窗 ===== */}
+      {showImageGallery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowImageGallery(null)}>
+          <div className="bg-white rounded-xl shadow-xl p-5 w-full max-w-lg mx-4"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-warm-800">从图库选择图片</h3>
+              <button onClick={() => setShowImageGallery(null)}
+                className="p-1 hover:bg-warm-50 rounded-lg">
+                <X className="w-4 h-4 text-warm-400" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3">
+              {PRESET_IMAGES.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => handlePickPresetImage(img.data)}
+                  className="p-1 rounded-lg border border-warm-200 hover:border-warm-500 hover:shadow-sm transition-all"
+                >
+                  <img src={img.data} alt={img.name}
+                    className="w-full h-14 object-cover rounded" />
+                  <p className="text-[10px] text-warm-600 text-center mt-0.5">{img.name}</p>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-warm-400 text-center mt-3">
+              点击图片选择，也可以返回点击「上传」从本地上传
+            </p>
           </div>
         </div>
       )}
