@@ -6,7 +6,7 @@ import { useActivityLibraryStore } from '../store/activityLibraryStore';
 import { useVenueStore } from '../store/venueStore';
 import { THEME_CONFIGS, WEEKDAY_NAMES } from '../types';
 import type { ThemeType, WeeklyPlanCell, Activity, Weekday, SlotId } from '../types';
-import { hasOutdoorKeyword } from '../utils/helpers';
+import { hasOutdoorKeyword, getWeekInfo } from '../utils/helpers';
 import { useReactToPrint } from 'react-to-print';
 import ActivityDetailModal from '../components/activityLibrary/ActivityDetailModal';
 import { PRESET_IMAGES } from '../utils/presetImages';
@@ -217,10 +217,33 @@ export default function WeeklyPlanPage() {
         </div>
       )}
 
-      {/* ===== 周计划表格 ===== */}
+      {/* ===== 周计划表（打印区域，含标题） ===== */}
       <div ref={printRef}
-        className="w-full max-w-[297mm] mx-auto"
+        className="w-full max-w-[297mm] mx-auto print:pb-[2cm]"
         style={{ minWidth: '700px', backgroundColor: theme.bg }}>
+
+        {/* 周计划标题 */}
+        {currentPlan && (() => {
+          const info = getWeekInfo(currentPlan.weekStart);
+          let title = `${info.year}年第${info.weekNum}周 活动计划表`;
+          let subtitle = `（${info.startDate} - ${info.endDate}）`;
+
+          // 跨月显示
+          if (info.crossYear) {
+            title = `${info.year-1}-${info.year}年第${info.weekNum}周 活动计划表`;
+          } else if (info.crossMonth) {
+            title = `${info.year}年${info.startMonth}月-${info.endMonth}月第${info.weekNum}周 活动计划表`;
+            subtitle = `（${info.startDate} - ${info.endDate}）`;
+          }
+
+          return (
+            <div className="text-center mb-4 print:mb-3">
+              <h2 className="text-base print:text-lg font-bold text-warm-800 print:text-black">{title}</h2>
+              <p className="text-xs print:text-sm text-warm-500 print:text-gray-600">{subtitle}</p>
+            </div>
+          );
+        })()}
+
         <table className="w-full border-collapse text-xs print:text-sm"
           style={{ backgroundColor: theme.bg, tableLayout: 'fixed' }}>
           <colgroup>

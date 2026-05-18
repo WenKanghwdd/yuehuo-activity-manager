@@ -11,6 +11,42 @@ export function getMonday(date: Date = new Date()): string {
   return d.toISOString().split('T')[0];
 }
 
+export function getWeekInfo(weekStart: string): {
+  year: number;
+  weekNum: number;
+  startDate: string;
+  endDate: string;
+  startMonth: number;
+  endMonth: number;
+  crossMonth: boolean;
+  crossYear: boolean;
+} {
+  const start = new Date(weekStart);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+
+  // Calculate week number: count weeks from Jan 1 of the year
+  const yearStart = new Date(start.getFullYear(), 0, 1);
+  // Find the first Monday of the year
+  const firstMonday = getMonday(yearStart);
+  const daysSince = Math.floor((start.getTime() - new Date(firstMonday).getTime()) / (1000 * 60 * 60 * 24));
+  const weekNum = Math.floor(daysSince / 7) + 1;
+
+  const startMonth = start.getMonth() + 1;
+  const endMonth = end.getMonth() + 1;
+
+  return {
+    year: start.getFullYear(),
+    weekNum: weekNum < 1 ? 1 : weekNum,
+    startDate: `${start.getMonth() + 1}/${start.getDate()}`,
+    endDate: `${end.getMonth() + 1}/${end.getDate()}`,
+    startMonth,
+    endMonth,
+    crossMonth: startMonth !== endMonth || start.getFullYear() !== end.getFullYear(),
+    crossYear: start.getFullYear() !== end.getFullYear(),
+  };
+}
+
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
