@@ -50,7 +50,7 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
         cells: {},
         timeConfig,
         dayNotes,
-        theme: 'default',
+        theme: 'springFestival',
         weatherReminder: '',
       };
       await putItem('weeklyPlans', plan);

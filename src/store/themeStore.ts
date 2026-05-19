@@ -9,7 +9,7 @@ interface ThemeState {
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
-  currentTheme: 'default',
+  currentTheme: 'springFestival',
   setTheme: (currentTheme) => set({ currentTheme }),
   getThemeConfig: () => THEME_CONFIGS[get().currentTheme],
 }));
