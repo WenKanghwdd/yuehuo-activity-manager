@@ -93,7 +93,7 @@ export default function WeeklyPlanPage() {
     if (!libLoaded) loadActivities();
     if (!venueStore.loaded) venueStore.loadAll();
     useWeeklyPlanStore.getState().loadOrCreatePlan(targetWeekStart);
-  }, [targetWeekStart, libLoaded, loadActivities, venueStore.loaded, venueStore.loadAll]);
+  }, [targetWeekStart]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -195,9 +195,13 @@ export default function WeeklyPlanPage() {
         </button>
         {/* 周导航 */}
         <button onClick={() => {
-          const d = new Date(targetWeekStart);
-          d.setDate(d.getDate() - 7);
-          setTargetWeekStart(getMonday(d));
+          // 简单字符串加减日期，避免 Date 时区问题
+          const parts = targetWeekStart.split('-').map(Number);
+          const d = new Date(parts[0], parts[1] - 1, parts[2] - 7);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          setTargetWeekStart(y + '-' + m + '-' + day);
         }}
           className="px-2 py-1.5 text-xs text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded transition-colors">
           ‹
@@ -206,9 +210,12 @@ export default function WeeklyPlanPage() {
           {currentPlan ? getWeekInfo(currentPlan.weekStart).year + '年第' + getWeekInfo(currentPlan.weekStart).weekNum + '周' : '加载中'}
         </span>
         <button onClick={() => {
-          const d = new Date(targetWeekStart);
-          d.setDate(d.getDate() + 7);
-          setTargetWeekStart(getMonday(d));
+          const parts = targetWeekStart.split('-').map(Number);
+          const d = new Date(parts[0], parts[1] - 1, parts[2] + 7);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          setTargetWeekStart(y + '-' + m + '-' + day);
         }}
           className="px-2 py-1.5 text-xs text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded transition-colors">
           ›
@@ -216,9 +223,11 @@ export default function WeeklyPlanPage() {
 
         <button onClick={async () => {
           if (!currentPlan) return;
-          const nextMonday = new Date(targetWeekStart);
-          nextMonday.setDate(nextMonday.getDate() + 7);
-          const nextStart = getMonday(nextMonday);
+          const parts = targetWeekStart.split('-').map(Number);
+          const nextDate = new Date(parts[0], parts[1] - 1, parts[2] + 7);
+          const nextStart = nextDate.getFullYear() + '-' +
+            String(nextDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(nextDate.getDate()).padStart(2, '0');
           const { putItem } = await import('../db');
           const dayNotes = {} as Record<Weekday, string>;
           [1,2,3,4,5,6,7].forEach(d => { dayNotes[d as Weekday] = ''; });

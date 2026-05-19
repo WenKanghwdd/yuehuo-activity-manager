@@ -4,11 +4,17 @@ export function generateId(): string {
 
 export function getMonday(date: Date = new Date()): string {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().split('T')[0];
+  // 转为 YYYY-MM-DD 再解析为 local 时间，避免 UTC 偏移
+  const localStr = d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+  const local = new Date(localStr + 'T00:00:00');
+  const day = local.getDay();
+  const diff = local.getDate() - day + (day === 0 ? -6 : 1);
+  local.setDate(diff);
+  return local.getFullYear() + '-' +
+    String(local.getMonth() + 1).padStart(2, '0') + '-' +
+    String(local.getDate()).padStart(2, '0');
 }
 
 export function getWeekInfo(weekStart: string): {
