@@ -459,8 +459,10 @@ export default function WeeklyPlanPage() {
                 <td className="p-2 text-center border-2 align-middle"
                   style={{ backgroundColor: theme.bg, color: theme.cellText, borderColor: theme.border }}>
                   <div className="font-black text-sm print:text-lg">{SLOT_LABELS[slotId]}</div>
-                  <div className="text-[10px] print:text-sm text-warm-500  leading-tight">
-                    {currentPlan?.timeConfig?.[1]?.[slotId]?.startTime || '?'}~{currentPlan?.timeConfig?.[1]?.[slotId]?.endTime || '?'}
+                  <div className="text-[10px] print:text-sm text-warm-500 leading-tight flex flex-col items-center">
+                    <span>{currentPlan?.timeConfig?.[1]?.[slotId]?.startTime || '?'}</span>
+                    <span className="text-[8px] print:text-[10px] text-warm-400">至</span>
+                    <span>{currentPlan?.timeConfig?.[1]?.[slotId]?.endTime || '?'}</span>
                   </div>
                 </td>
 
