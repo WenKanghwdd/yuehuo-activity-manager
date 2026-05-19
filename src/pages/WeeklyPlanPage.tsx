@@ -27,6 +27,7 @@ export default function WeeklyPlanPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [detailActivity, setDetailActivity] = useState<Activity | null>(null);
   const [targetWeekStart, setTargetWeekStart] = useState(getMonday(new Date()));
+  const [navKey, setNavKey] = useState(0);
   const [showAllTimeEdit, setShowAllTimeEdit] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showImageGallery, setShowImageGallery] = useState<{ slotId: string; weekday: number } | null>(null);
@@ -87,13 +88,12 @@ export default function WeeklyPlanPage() {
 
 
 
-  // 初始加载
+  // 加载周计划（响应 targetWeekStart 变化）
   useEffect(() => {
     if (!libLoaded) loadActivities();
     if (!venueStore.loaded) venueStore.loadAll();
     useWeeklyPlanStore.getState().loadOrCreatePlan(targetWeekStart);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [targetWeekStart, libLoaded, loadActivities, venueStore.loaded, venueStore.loadAll]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -197,9 +197,7 @@ export default function WeeklyPlanPage() {
         <button onClick={() => {
           const d = new Date(targetWeekStart);
           d.setDate(d.getDate() - 7);
-          const week = getMonday(d);
-          setTargetWeekStart(week);
-          useWeeklyPlanStore.getState().loadOrCreatePlan(week);
+          setTargetWeekStart(getMonday(d));
         }}
           className="px-2 py-1.5 text-xs text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded transition-colors">
           ‹
@@ -210,9 +208,7 @@ export default function WeeklyPlanPage() {
         <button onClick={() => {
           const d = new Date(targetWeekStart);
           d.setDate(d.getDate() + 7);
-          const week = getMonday(d);
-          setTargetWeekStart(week);
-          useWeeklyPlanStore.getState().loadOrCreatePlan(week);
+          setTargetWeekStart(getMonday(d));
         }}
           className="px-2 py-1.5 text-xs text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded transition-colors">
           ›
@@ -246,7 +242,6 @@ export default function WeeklyPlanPage() {
           };
           await putItem('weeklyPlans', nextPlan);
           setTargetWeekStart(nextStart);
-          useWeeklyPlanStore.getState().loadOrCreatePlan(nextStart);
         }}
           className="flex items-center gap-1.5 px-4 py-2 bg-warm-500 text-white rounded-lg hover:bg-warm-600 text-sm font-medium transition-colors shadow-sm">
           <Plus className="w-4 h-4" /> 新增下周计划
