@@ -5,7 +5,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useActivityLibraryStore } from '../store/activityLibraryStore';
 import { useVenueStore } from '../store/venueStore';
 import { THEME_CONFIGS, WEEKDAY_NAMES } from '../types';
-import type { ThemeType, WeeklyPlanCell, Activity, Weekday, SlotId } from '../types';
+import type { ThemeType, WeeklyPlanCell, Activity, Weekday, SlotId, DayTimeConfig } from '../types';
 import { hasOutdoorKeyword, getWeekInfo, getMonday } from '../utils/helpers';
 import { useReactToPrint } from 'react-to-print';
 import ActivityDetailModal from '../components/activityLibrary/ActivityDetailModal';
@@ -193,17 +193,56 @@ export default function WeeklyPlanPage() {
           className="flex items-center gap-1.5 px-3 py-2 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 text-sm text-warm-700 transition-colors">
           <Palette className="w-4 h-4" /> 风格模板
         </button>
+        {/* 周导航 */}
+        <button onClick={() => {
+          const d = new Date(targetWeekStart);
+          d.setDate(d.getDate() - 7);
+          const week = getMonday(d);
+          setTargetWeekStart(week);
+          useWeeklyPlanStore.getState().loadOrCreatePlan(week);
+        }}
+          className="px-2 py-1.5 text-xs text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded transition-colors">
+          ‹
+        </button>
+        <span className="text-xs text-warm-600 font-medium min-w-[100px] text-center">
+          {currentPlan ? getWeekInfo(currentPlan.weekStart).year + '年第' + getWeekInfo(currentPlan.weekStart).weekNum + '周' : '加载中'}
+        </span>
+        <button onClick={() => {
+          const d = new Date(targetWeekStart);
+          d.setDate(d.getDate() + 7);
+          const week = getMonday(d);
+          setTargetWeekStart(week);
+          useWeeklyPlanStore.getState().loadOrCreatePlan(week);
+        }}
+          className="px-2 py-1.5 text-xs text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded transition-colors">
+          ›
+        </button>
+
         <button onClick={async () => {
           if (!currentPlan) return;
           const nextMonday = new Date(targetWeekStart);
           nextMonday.setDate(nextMonday.getDate() + 7);
           const nextStart = getMonday(nextMonday);
           const { putItem } = await import('../db');
+          const dayNotes = {} as Record<Weekday, string>;
+          [1,2,3,4,5,6,7].forEach(d => { dayNotes[d as Weekday] = ''; });
+          // 新建计划：重置时间和备注
+          const freshConfig = {} as Record<Weekday, DayTimeConfig>;
+          [1,2,3,4,5,6,7].forEach(d => {
+            freshConfig[d as Weekday] = {
+              morning: { startTime: '08:00', endTime: '11:00' },
+              afternoon: { startTime: '14:00', endTime: '17:00' },
+              evening: { startTime: '18:00', endTime: '20:00' },
+            };
+          });
           const nextPlan = {
             ...currentPlan,
             id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
             weekStart: nextStart,
             cells: {},
+            timeConfig: freshConfig,
+            dayNotes,
+            weatherReminder: '',
           };
           await putItem('weeklyPlans', nextPlan);
           setTargetWeekStart(nextStart);
