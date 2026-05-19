@@ -87,11 +87,16 @@ export default function WeeklyPlanPage() {
 
 
 
+  // 初始加载
   useEffect(() => {
     if (!libLoaded) loadActivities();
     if (!venueStore.loaded) venueStore.loadAll();
-    loadOrCreatePlan(targetWeekStart);
-  }, [loadOrCreatePlan, loadActivities, libLoaded, venueStore, targetWeekStart]);
+  }, [libLoaded, loadActivities, venueStore.loaded, venueStore.loadAll]);
+
+  // 周计划切换
+  useEffect(() => {
+    useWeeklyPlanStore.getState().loadOrCreatePlan(targetWeekStart);
+  }, [targetWeekStart]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
