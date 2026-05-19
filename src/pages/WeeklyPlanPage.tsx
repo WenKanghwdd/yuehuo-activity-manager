@@ -442,7 +442,7 @@ export default function WeeklyPlanPage() {
                           <div className="relative group">
                             <img src={cell.imageBase64} alt="活动图片"
                               className="w-full object-cover rounded border"
-                              style={{ height: `${cell.imageHeight || 60}px`, borderColor: theme.border }} />
+                              style={{ height: `${cell.imageHeight || 80}px`, borderColor: theme.border }} />
                             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 group-hover:bg-black/30 transition-colors print:hidden">
                               <button onClick={(e) => { e.stopPropagation();
                                 const input = document.createElement('input');
@@ -454,12 +454,12 @@ export default function WeeklyPlanPage() {
                                 更换
                               </button>
                               <button onClick={(e) => { e.stopPropagation();
-                                const h = cell.imageHeight || 60;
+                                const h = cell.imageHeight || 80;
                                 const nextH = h >= 80 ? 40 : h >= 60 ? 80 : 60;
                                 updateCell(slotId, day as Weekday, { imageHeight: nextH });
                               }}
                                 className="opacity-0 group-hover:opacity-100 px-2 py-0.5 bg-blue-500/90 text-white text-[10px] rounded">
-                                {cell.imageHeight || 60}px
+                                {cell.imageHeight || 80}px
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); updateCell(slotId, day as Weekday, { imageBase64: null }); }}
                                 className="opacity-0 group-hover:opacity-100 px-2 py-0.5 bg-red-500/90 text-white text-[10px] rounded">
@@ -490,7 +490,7 @@ export default function WeeklyPlanPage() {
                       {/* 打印时显示图片 */}
                       {cell?.imageBase64 && (
                         <div className="hidden print:block mb-1">
-                          <img src={cell.imageBase64} alt="" className="w-full object-cover rounded border" style={{ height: `${cell.imageHeight || 60}px` }} />
+                          <img src={cell.imageBase64} alt="" className="w-full object-cover rounded border" style={{ height: `${cell.imageHeight || 80}px` }} />
                         </div>
                       )}
 
