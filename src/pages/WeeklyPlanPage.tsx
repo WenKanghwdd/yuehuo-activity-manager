@@ -504,49 +504,51 @@ export default function WeeklyPlanPage() {
                         </button>
                       )}
 
-                      {/* ===== 活动名称 — 橙色突出 ===== */}
+                      {/* ===== 活动名称 — 橙色突出（始终显示） ===== */}
                       <div className="mb-1.5">
-                        {activityName ? (
-                          <div
-                            className="text-[17px] print:text-lg font-black leading-tight text-center px-1 py-0.5 rounded"
-                            style={{backgroundColor:theme.accent+'15', borderLeft:'3px solid '+theme.accent}}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (act) setDetailActivity(act);
-                            }}
-                          >
-                            {activityName}
-                          </div>
-                        ) : (
-                          <div className="text-[10px] text-warm-300 italic leading-tight no-print text-center">
-                            点击选择活动
-                          </div>
-                        )}
+                        <div
+                          className="text-center px-1 py-0.5 rounded"
+                          style={{backgroundColor:theme.accent+'15', borderLeft:'3px solid '+theme.accent}}
+                        >
+                          {activityName ? (
+                            <span
+                              className="text-[17px] print:text-lg font-black leading-tight"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (act) setDetailActivity(act);
+                              }}
+                            >
+                              {activityName}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-warm-300 italic leading-tight no-print">
+                              点击选择活动
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* ===== 活动场所 — 有活动时蓝色突出 ===== */}
+                      {/* ===== 活动场所 — 蓝色突出（始终显示） ===== */}
                       <div className="mb-1.5">
-                        {activityName ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVenueEditValue(cell?.venue || '');
-                              venueStore.openVenueEditor(
-                                `${WEEKDAY_NAMES[day as Weekday]} ${SLOT_LABELS[slotId as SlotId]}`,
-                                cell?.venue || '',
-                                (v) => updateCell(slotId, day as Weekday, { venue: v })
-                              );
-                            }}
-                            className="w-full text-center text-xs print:text-sm leading-tight px-1 py-0.5 rounded flex items-center justify-center gap-1"
-                            style={{backgroundColor: cell?.venue ? '#eff6ff' : 'transparent', borderLeft: cell?.venue ? '3px solid #3b82f6' : 'none'}}
-                          >
-                            <MapPin className="w-2.5 h-2.5 print:w-3 print:h-3 shrink-0 text-blue-500" />
-                            <span className="truncate text-blue-700">{cell?.venue || '点击添加场所'}</span>
-                          </button>
-                        ) : null}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVenueEditValue(cell?.venue || '');
+                            venueStore.openVenueEditor(
+                              `${WEEKDAY_NAMES[day as Weekday]} ${SLOT_LABELS[slotId as SlotId]}`,
+                              cell?.venue || '',
+                              (v) => updateCell(slotId, day as Weekday, { venue: v })
+                            );
+                          }}
+                          className="w-full text-center text-xs print:text-sm leading-tight px-1 py-0.5 rounded flex items-center justify-center gap-1"
+                          style={{backgroundColor:'#eff6ff', borderLeft:'3px solid #3b82f6'}}
+                        >
+                          <MapPin className="w-2.5 h-2.5 print:w-3 print:h-3 shrink-0 text-blue-500" />
+                          <span className="truncate text-blue-700">{cell?.venue || '点击添加场所'}</span>
+                        </button>
                       </div>
 
-                      {/* ===== 备注/提醒 — 有活动时绿色突出 ===== */}
+                      {/* ===== 备注/提醒 — 绿色突出（始终显示） ===== */}
                       <div>
                         <textarea
                           value={cell?.note || ''}
@@ -559,8 +561,8 @@ export default function WeeklyPlanPage() {
                           }`}
                           style={{
                             minHeight: '24px',
-                            backgroundColor: activityName ? (outdoor ? '#fef2f2' : '#f0fdf4') : 'transparent',
-                            borderLeft: activityName ? (outdoor ? '3px solid #ef4444' : '3px solid #22c55e') : 'none',
+                            backgroundColor: outdoor ? '#fef2f2' : '#f0fdf4',
+                            borderLeft: outdoor ? '3px solid #ef4444' : '3px solid #22c55e',
                           }}
                         />
                       </div>
