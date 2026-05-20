@@ -261,7 +261,7 @@ export default function ElderlyPage() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 no-print">
         <button
           onClick={() => setShowImport(true)}
           className="flex items-center gap-1.5 px-3 py-2 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 text-sm text-warm-700 transition-colors"
@@ -301,7 +301,7 @@ export default function ElderlyPage() {
 
       {/* Selection Bar */}
       {selectedIds.length > 0 && (
-        <div className="bg-warm-500/10 border border-warm-200 rounded-lg px-4 py-2 flex flex-wrap items-center gap-3">
+        <div className="bg-warm-500/10 border border-warm-200 rounded-lg px-4 py-2 flex flex-wrap items-center gap-3 no-print">
           <span className="text-sm text-warm-700 font-medium">已选 {selectedIds.length} 人</span>
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-warm-500">日期：</span>
@@ -347,7 +347,7 @@ export default function ElderlyPage() {
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Elderly Grid */}
-        <div className="lg:w-1/3 xl:w-1/4">
+        <div className="lg:w-1/3 xl:w-1/4 no-print">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-warm-500">
               共 {filteredElderly.length} 位老人
@@ -395,7 +395,7 @@ export default function ElderlyPage() {
         </div>
 
         {/* Activity Record Panel */}
-        <div className="flex-1 bg-white rounded-xl border border-warm-100 p-4">
+        <div className="flex-1 bg-white rounded-xl border border-warm-100 p-4 print:max-w-none print:w-full">
           {selectedElderly ? (
             <>
               <div className="flex items-center justify-between mb-4">
