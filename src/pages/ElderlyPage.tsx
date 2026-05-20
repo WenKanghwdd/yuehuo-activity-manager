@@ -7,6 +7,7 @@ import {
   Search,
   Users,
   X,
+  Trash2,
 } from 'lucide-react';
 import { useElderlyStore } from '../store/elderlyStore';
 import { useActivityRecordStore } from '../store/activityRecordStore';
@@ -75,7 +76,7 @@ function SortableCard({
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm text-warm-800 truncate">{elderly.name}</p>
           <p className="text-xs text-warm-400">
-            {elderly.roomNumber ? `${elderly.roomNumber} · ` : ''}
+            {elderly.roomNumber ? <span className="inline-flex items-center px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-medium mr-1">🏠 {elderly.roomNumber}</span> : ''}
             {elderly.groupName}
           </p>
         </div>
@@ -98,6 +99,7 @@ export default function ElderlyPage() {
     toggleSelect,
     selectAll,
     deselectAll,
+    deleteElderly,
   } = useElderlyStore();
   const { records, loadRecords, setStatus, batchSetStatus, cleanupOldRecords } =
     useActivityRecordStore();
@@ -116,6 +118,9 @@ export default function ElderlyPage() {
   const [cleanupCount, setCleanupCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
+  const [batchTimeSlot, setBatchTimeSlot] = useState(DEFAULT_TIME_SLOTS[0].id);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
@@ -296,16 +301,37 @@ export default function ElderlyPage() {
 
       {/* Selection Bar */}
       {selectedIds.length > 0 && (
-        <div className="bg-warm-500/10 border border-warm-200 rounded-lg px-4 py-2 flex items-center gap-3">
-          <span className="text-sm text-warm-700">已选 {selectedIds.length} 人</span>
+        <div className="bg-warm-500/10 border border-warm-200 rounded-lg px-4 py-2 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-warm-700 font-medium">已选 {selectedIds.length} 人</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-warm-500">日期：</span>
+            <input
+              type="date"
+              value={batchDate}
+              onChange={(e) => setBatchDate(e.target.value)}
+              className="px-2 py-1 border border-warm-200 rounded text-xs outline-none focus:ring-2 focus:ring-warm-500 bg-white"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-warm-500">时段：</span>
+            <select
+              value={batchTimeSlot}
+              onChange={(e) => setBatchTimeSlot(e.target.value)}
+              className="px-2 py-1 border border-warm-200 rounded text-xs outline-none focus:ring-2 focus:ring-warm-500 bg-white"
+            >
+              {DEFAULT_TIME_SLOTS.map((s) => (
+                <option key={s.id} value={s.id}>{s.label}</option>
+              ))}
+            </select>
+          </div>
           <button
-            onClick={() => batchSetStatus(selectedIds, new Date().toISOString().split('T')[0], 'morning-1', '批量标记', 'participated')}
+            onClick={() => batchSetStatus(selectedIds, batchDate, batchTimeSlot, '批量标记', 'participated')}
             className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs hover:bg-green-600 transition-colors"
           >
             标记已参加
           </button>
           <button
-            onClick={() => batchSetStatus(selectedIds, new Date().toISOString().split('T')[0], 'morning-1', '批量标记', 'not_participated')}
+            onClick={() => batchSetStatus(selectedIds, batchDate, batchTimeSlot, '批量标记', 'not_participated')}
             className="px-3 py-1.5 bg-red-400 text-white rounded-lg text-xs hover:bg-red-500 transition-colors"
           >
             标记未参加
@@ -376,10 +402,21 @@ export default function ElderlyPage() {
                 <div>
                   <h3 className="font-bold text-warm-800">{selectedElderly.name}</h3>
                   <p className="text-xs text-warm-400">
-                    {selectedElderly.roomNumber} · {selectedElderly.groupName}
+                    {selectedElderly.roomNumber ? <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[11px] font-medium">🏠 {selectedElderly.roomNumber}</span> : ''}
+                    {selectedElderly.roomNumber && selectedElderly.groupName ? ' · ' : ''}
+                    {selectedElderly.groupName}
                   </p>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(selectedElderly.id)}
+                    className="flex items-center gap-1 px-2 py-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    title="删除此老人"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    删除
+                  </button>
+                  <div className="flex gap-1">
                   {(['daily', 'weekly', 'monthly'] as const).map((view) => (
                     <button
                       key={view}
@@ -395,6 +432,7 @@ export default function ElderlyPage() {
                   ))}
                 </div>
               </div>
+            </div>
 
               {/* Weekly Record Table */}
               {recordView === 'weekly' && (
@@ -707,6 +745,26 @@ export default function ElderlyPage() {
         cancelText="稍后再说"
         onConfirm={handleCleanup}
         onCancel={() => setShowCleanupConfirm(false)}
+      />
+
+      {/* Delete elderly confirm */}
+      <ConfirmDialog
+        open={showDeleteConfirm !== null}
+        title="确认删除"
+        message={`确定要删除老人「${elderlyList.find(e => e.id === showDeleteConfirm)?.name || ''}」吗？此操作不可撤销，关联的活动记录也将一并清除。`}
+        confirmText="确认删除"
+        cancelText="取消"
+        onConfirm={async () => {
+          if (showDeleteConfirm) {
+            await deleteElderly(showDeleteConfirm);
+            if (selectedElderly?.id === showDeleteConfirm) {
+              setSelectedElderly(null);
+            }
+            setShowDeleteConfirm(null);
+          }
+        }}
+        onCancel={() => setShowDeleteConfirm(null)}
+        danger
       />
     </div>
   );

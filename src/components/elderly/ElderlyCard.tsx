@@ -91,8 +91,10 @@ export const ElderlyCard: React.FC<ElderlyCardProps> = ({
 
         {/* Room number */}
         {elderly.roomNumber && (
-          <p className="text-sm text-gray-500 mb-2">
-            🏠 {elderly.roomNumber}
+          <p className="mb-2">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-800 rounded-full text-sm font-medium">
+              🏠 {elderly.roomNumber}
+            </span>
           </p>
         )}
 
