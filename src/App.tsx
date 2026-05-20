@@ -4,6 +4,7 @@ import WeeklyPlanPage from './pages/WeeklyPlanPage';
 import ActivityLibraryPage from './pages/ActivityLibraryPage';
 import ElderlyPage from './pages/ElderlyPage';
 import SettingsPage from './pages/SettingsPage';
+import ActivationDialog from './components/common/ActivationDialog';
 import { useAutoSave as useDesktopAutoSave } from './electronFileStore';
 import { isElectron } from './electronFileStore';
 
@@ -19,6 +20,7 @@ function AppInit() {
 export default function App() {
   return (
     <HashRouter>
+      <ActivationDialog />
       <AppInit />
       <Routes>
         <Route element={<Layout />}>

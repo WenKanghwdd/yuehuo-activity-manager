@@ -1,8 +1,81 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const os = require('os');
 
 let mainWindow;
+
+// ===== 激活系统配置 =====
+// 这是密钥盐，只有我知道，用来生成激活码
+const SECRET_SALT = 'YueHuo_2026_ShangHai_NursingHome!@#';
+
+const ACTIVATION_FILE = path.join(app.getPath('userData'), 'activation.json');
+
+// 生成机器码（基于硬件信息，保持稳定）
+function getMachineCode() {
+  const raw = [
+    os.hostname(),
+    os.cpus()[0]?.model || 'unknown',
+    os.machine(),
+    os.arch(),
+    // MAC 地址（取第一个非本地回环的）
+    (() => {
+      const nets = os.networkInterfaces();
+      for (const name of Object.keys(nets)) {
+        const iface = nets[name];
+        if (!iface) continue;
+        for (const info of iface) {
+          if (!info.internal && info.mac && info.mac !== '00:00:00:00:00:00') {
+            return info.mac;
+          }
+        }
+      }
+      return '00:00:00:00:00:00';
+    })(),
+  ].join('||');
+  
+  return crypto.createHash('sha256').update(raw).digest('hex').toUpperCase();
+}
+
+// 根据机器码生成激活码
+function generateActivationCode(machineCode) {
+  return crypto.createHash('sha256')
+    .update(machineCode + SECRET_SALT)
+    .digest('hex')
+    .substring(0, 16)
+    .toUpperCase();
+}
+
+// 校验激活码
+function verifyActivationCode(machineCode, userCode) {
+  const expected = generateActivationCode(machineCode);
+  return expected === userCode.toUpperCase().trim();
+}
+
+// 读取激活状态
+function getActivationStatus() {
+  try {
+    if (fs.existsSync(ACTIVATION_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ACTIVATION_FILE, 'utf-8'));
+      return {
+        activated: true,
+        machineCode: data.machineCode,
+        activatedAt: data.activatedAt,
+      };
+    }
+  } catch {}
+  return { activated: false, machineCode: null, activatedAt: null };
+}
+
+// 保存激活状态
+function saveActivation(machineCode) {
+  ensureDataDir();
+  fs.writeFileSync(ACTIVATION_FILE, JSON.stringify({
+    machineCode,
+    activatedAt: new Date().toISOString(),
+  }, null, 2), 'utf-8');
+}
 
 // ===== 数据文件管理 =====
 const DATA_DIR = path.join(app.getPath('userData'), 'data');
@@ -17,7 +90,28 @@ function ensureDataDir() {
 
 // ===== IPC 处理器 =====
 
-// 保存全部数据
+// 激活相关
+ipcMain.handle('activation:getMachineCode', async () => {
+  const machineCode = getMachineCode();
+  return { machineCode };
+});
+
+ipcMain.handle('activation:check', async () => {
+  return getActivationStatus();
+});
+
+ipcMain.handle('activation:activate', async (_event, userCode) => {
+  const machineCode = getMachineCode();
+  const valid = verifyActivationCode(machineCode, userCode);
+  
+  if (valid) {
+    saveActivation(machineCode);
+    return { ok: true, message: '激活成功！' };
+  }
+  return { ok: false, message: '激活码无效，请确认输入正确。' };
+});
+
+// 数据相关
 ipcMain.handle('data:save', async (_event, jsonData) => {
   try {
     ensureDataDir();
@@ -34,7 +128,6 @@ ipcMain.handle('data:save', async (_event, jsonData) => {
   }
 });
 
-// 读取全部数据
 ipcMain.handle('data:load', async () => {
   try {
     if (!fs.existsSync(DATA_FILE)) {
@@ -49,7 +142,6 @@ ipcMain.handle('data:load', async () => {
   }
 });
 
-// 获取数据文件信息
 ipcMain.handle('data:info', async () => {
   try {
     if (!fs.existsSync(DATA_FILE)) {
@@ -68,7 +160,6 @@ ipcMain.handle('data:info', async () => {
   }
 });
 
-// 清空数据文件
 ipcMain.handle('data:clear', async () => {
   try {
     if (fs.existsSync(DATA_FILE)) {
@@ -80,7 +171,6 @@ ipcMain.handle('data:clear', async () => {
   }
 });
 
-// 获取平台和环境信息
 ipcMain.handle('app:info', async () => {
   return {
     platform: process.platform,
