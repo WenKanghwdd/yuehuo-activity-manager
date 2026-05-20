@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Download, Trash2, AlertTriangle, Database, Shield } from 'lucide-react';
+import { Download, Trash2, AlertTriangle, Database, Shield, HardDrive, Link2, Link2Off, CheckCircle2, Loader2 } from 'lucide-react';
 import { getAll, clearStore } from '../db';
 import { useActivityRecordStore } from '../store/activityRecordStore';
 import { exportToExcel } from '../utils/helpers';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import type { ActivityRecord } from '../types';
+import { useFileStore, pickFileLocation, disconnectFile } from '../fileStore';
 
 export default function SettingsPage() {
   const { cleanupOldRecords } = useActivityRecordStore();
+  const { fileHandle, syncStatus, lastSyncTime } = useFileStore();
   const [recordCount, setRecordCount] = useState(0);
   const [cleanupCount, setCleanupCount] = useState(0);
   const [showCleanup, setShowCleanup] = useState(false);
@@ -93,6 +95,51 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* File Storage */}
+      <div className="bg-white rounded-xl border border-warm-100 p-5">
+        <h2 className="font-bold text-warm-800 flex items-center gap-2 mb-4">
+          <HardDrive className="w-5 h-5 text-warm-500" />
+          文件持久化存储
+        </h2>
+        {fileHandle ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-green-700">已连接到本地文件</p>
+                <p className="text-xs text-green-500 truncate">
+                  {lastSyncTime ? `上次同步：${lastSyncTime}` : '等待首次同步'}
+                  {syncStatus === 'saving' && ' · 保存中...'}
+                </p>
+              </div>
+              {syncStatus === 'saving' && <Loader2 className="w-4 h-4 text-green-500 animate-spin" />}
+              {syncStatus === 'saved' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+            </div>
+            <button
+              onClick={disconnectFile}
+              className="flex items-center gap-2 px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-600 hover:bg-warm-50 transition-colors"
+            >
+              <Link2Off className="w-4 h-4" />
+              断开文件连接
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-warm-500 leading-relaxed">
+              将数据保存到电脑上的本地文件（如桌面），即使清理浏览器缓存也不会丢失数据。
+              支持 Chrome / Edge 浏览器。
+            </p>
+            <button
+              onClick={pickFileLocation}
+              className="flex items-center gap-2 px-4 py-2.5 bg-warm-500 text-white rounded-lg text-sm font-medium hover:bg-warm-600 transition-colors"
+            >
+              <Link2 className="w-4 h-4" />
+              选择存储位置
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Privacy Notice */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
         <h2 className="font-bold text-amber-800 flex items-center gap-2 mb-2">
@@ -100,7 +147,7 @@ export default function SettingsPage() {
           隐私说明
         </h2>
         <p className="text-sm text-amber-700 leading-relaxed">
-          所有数据仅存储于当前浏览器的 IndexedDB 中，不上传任何服务器。
+          所有数据仅存储于当前浏览器的 IndexedDB 和您指定的本地文件中，不上传任何服务器。
           应用完全离线可用。老人个人信息请在打印纸质件时妥善保管。
         </p>
       </div>

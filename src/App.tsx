@@ -4,10 +4,18 @@ import WeeklyPlanPage from './pages/WeeklyPlanPage';
 import ActivityLibraryPage from './pages/ActivityLibraryPage';
 import ElderlyPage from './pages/ElderlyPage';
 import SettingsPage from './pages/SettingsPage';
+import { useFileStore } from './fileStore';
+
+function AppInit() {
+  // Mount file store at app level for continuous auto-save
+  useFileStore();
+  return null;
+}
 
 export default function App() {
   return (
     <HashRouter>
+      <AppInit />
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<WeeklyPlanPage />} />
