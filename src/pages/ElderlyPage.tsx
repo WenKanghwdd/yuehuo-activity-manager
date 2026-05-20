@@ -125,6 +125,12 @@ export default function ElderlyPage() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printMode, setPrintMode] = useState<'separate' | 'combined'>('separate');
   const [printingElderly, setPrintingElderly] = useState<Elderly[]>([]);
+  const [wkTotal, setWkTotal] = useState(0);
+  const [wkDid, setWkDid] = useState(0);
+  const [wkWording, setWkWording] = useState('');
+  const [moTotal, setMoTotal] = useState(0);
+  const [moDid, setMoDid] = useState(0);
+  const [moWording, setMoWording] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
@@ -153,6 +159,54 @@ export default function ElderlyPage() {
 
   const weekStart = getMonday(currentDate);
   const weekDates = getWeekDates(weekStart);
+
+  // Weekly summary
+  useEffect(() => {
+    const t = weekDates.reduce((sum, date) => {
+      const slots = DEFAULT_TIME_SLOTS.filter(s => getActivityForSlot(date, s.id));
+      return sum + slots.length;
+    }, 0);
+    setWkTotal(t);
+    if (selectedElderly && t) {
+      const d = records.filter(
+        r => r.elderlyId === selectedElderly.id && r.date >= weekDates[0] && r.date <= weekDates[6] && r.status === "participated"
+      ).length;
+      setWkDid(d);
+      const p = Math.round(d / t * 100);
+      if (p >= 80) setWkWording("，很积极呢 👏");
+      else if (p >= 50) setWkWording("，继续加油呀 💪");
+      else setWkWording("，慢慢来不着急 🌿");
+    } else {
+      setWkDid(0);
+      setWkWording("");
+    }
+  }, [selectedElderly, records, weekDates, currentPlan, activities]);
+
+  // Monthly summary
+  useEffect(() => {
+    if (!selectedElderly) { setMoTotal(0); setMoDid(0); setMoWording(""); return; }
+    const td = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    let t = 0;
+    let d = 0;
+    for (let i = 1; i <= td; i++) {
+      const ds = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
+      const dr = records.filter(r => r.elderlyId === selectedElderly.id && r.date === ds);
+      DEFAULT_TIME_SLOTS.forEach(s => {
+        if (getActivityForSlot(ds, s.id) || dr.some(r => r.timeSlotId === s.id)) { t++; }
+      });
+      d += dr.filter(r => r.status === "participated").length;
+    }
+    setMoTotal(t);
+    setMoDid(d);
+    if (t > 0) {
+      const p = Math.round(d / t * 100);
+      if (p >= 80) setMoWording("，真棒呀 🎉");
+      else if (p >= 50) setMoWording("，继续努力 💪");
+      else setMoWording("，参加一下活动也挺好的 ☕");
+    } else {
+      setMoWording("");
+    }
+  }, [selectedElderly, records, currentDate, currentPlan, activities]);
 
   const filteredElderly = elderlyList.filter((e) => {
     if (statusFilter === 'all') return true;
@@ -561,6 +615,10 @@ export default function ElderlyPage() {
                 </div>
               )}
 
+                {wkTotal > 0 && <div className="mt-3 text-xs text-warm-500 leading-relaxed no-print">
+                  这周一共安排了 <span className="text-warm-600 font-medium">{wkTotal}</span> 场活动，
+                  老人家参加了 <span className={wkDid > 0 ? "text-green-600 font-medium" : "text-warm-500"}>{wkDid}</span> 场{wkWording}
+                </div>}
               {/* Daily Record */}
               {recordView === 'daily' && (
                 <div className="space-y-3">
@@ -693,6 +751,10 @@ export default function ElderlyPage() {
                 </div>
               )}
 
+                {moTotal > 0 && <div className="mt-2 text-xs text-warm-500 leading-relaxed">
+                  这个月一共安排了 <span className="text-warm-600 font-medium">{moTotal}</span> 场活动，
+                  老人家参加了 <span className={moDid > 0 ? "text-green-600 font-medium" : "text-warm-500"}>{moDid}</span> 场{moWording}
+                </div>}
               {/* Print Button for Records */}
               <div className="mt-4 flex justify-end no-print">
                 <button
