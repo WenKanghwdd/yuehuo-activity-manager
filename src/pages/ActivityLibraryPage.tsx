@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, Palette, X, ArrowUp, Columns3, Columns2 } from 'lucide-react';
+import { Search, Plus, Palette, X, ArrowUp, Columns3 } from 'lucide-react';
 import { useActivityLibraryStore } from '../store/activityLibraryStore';
 import { useTagStore } from '../store/tagStore';
+import { useVenueStore } from '../store/venueStore';
 import { ACTIVITY_TAGS, type ActivityTag, type Activity } from '../types';
 import ActivityCard from '../components/activityLibrary/ActivityCard';
 import ActivityDetailModal from '../components/activityLibrary/ActivityDetailModal';
@@ -17,27 +18,37 @@ const TAG_COLORS = [
 export default function ActivityLibraryPage() {
   const { activities, loading, loaded, loadActivities, searchQuery, setSearchQuery, selectedTags, toggleTag, addActivity } = useActivityLibraryStore();
   const tagStore = useTagStore();
+  const venueStore = useVenueStore();
   const [showAdd, setShowAdd] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [showTagManager, setShowTagManager] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#e67414');
   const [colorPickerTag, setColorPickerTag] = useState<string | null>(null);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [showHiddenTags, setShowHiddenTags] = useState(false);
   const [formData, setFormData] = useState({
     name: '', description: '', venue: '', equipment: '', minStaff: 1,
-    safetyTips: '', buyLink: '', tags: [] as ActivityTag[], images: [] as string[],
+    safetyTips: '', buyLinks: [] as { label: string; url: string }[], tags: [] as ActivityTag[], images: [] as string[],
   });
+  const [newLinkLabel, setNewLinkLabel] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
 
   useEffect(() => {
     if (!loaded) loadActivities();
     if (!tagStore.loaded) tagStore.loadTags();
+    if (!venueStore.loaded) venueStore.loadAll();
   }, []);
 
   // 统计每种标签的活动数
   const tagCounts: Record<string, number> = {};
   activities.forEach(a => a.tags.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
 
-  // 所有标签（预设 + 自定义）
+  // 所有标签（预设 + 自定义），排除隐藏的预设标签
+  const visibleTags = [...ACTIVITY_TAGS.filter(t => !tagStore.hiddenTags.includes(t)), ...tagStore.customTags.filter(t => !ACTIVITY_TAGS.includes(t as ActivityTag))];
+  const hiddenPresetTags = ACTIVITY_TAGS.filter(t => tagStore.hiddenTags.includes(t));
+  // 标签管理界面显示全部（含隐藏）
   const allTags = [...ACTIVITY_TAGS, ...tagStore.customTags.filter(t => !ACTIVITY_TAGS.includes(t as ActivityTag))];
 
   const filtered = activities.filter((a) => {
@@ -51,11 +62,11 @@ export default function ActivityLibraryPage() {
     await addActivity({
       name: formData.name, description: formData.description, venue: formData.venue,
       equipment: formData.equipment.split('\n').filter(Boolean), minStaff: formData.minStaff,
-      safetyTips: formData.safetyTips, buyLink: formData.buyLink,
+      safetyTips: formData.safetyTips, buyLinks: formData.buyLinks,
       tags: formData.tags.length > 0 ? formData.tags : ['文娱欣赏'], images: formData.images,
     });
     setShowAdd(false);
-    setFormData({ name: '', description: '', venue: '', equipment: '', minStaff: 1, safetyTips: '', buyLink: '', tags: [], images: [] });
+    setFormData({ name: '', description: '', venue: '', equipment: '', minStaff: 1, safetyTips: '', buyLinks: [], tags: [], images: [] });
   };
 
   const handleAddTag = async () => {
@@ -92,7 +103,7 @@ export default function ActivityLibraryPage() {
             <Palette className="w-4 h-4" /> 标签管理
           </button>
           <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-600 transition-colors">
             <Plus className="w-4 h-4" /> 新增活动
           </button>
           {/* Columns toggle */}
@@ -106,7 +117,7 @@ export default function ActivityLibraryPage() {
                 onMouseLeave={() => setShowColPicker(false)}>
                 {[2, 3, 4, 5].map(n => (
                   <button key={n} onClick={() => { setColumns(n); setShowColPicker(false); }}
-                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${columns === n ? 'bg-orange-100 text-orange-700 font-medium' : 'text-gray-600 hover:bg-warm-50'}`}>
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${columns === n ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-warm-50'}`}>
                     {n}列
                   </button>
                 ))}
@@ -126,7 +137,7 @@ export default function ActivityLibraryPage() {
 
       {/* Tags with counts */}
       <div className="flex flex-wrap gap-2">
-        {allTags.map((tag) => {
+        {visibleTags.map((tag) => {
           const cfg = tagStore.getTagConfig(tag);
           const count = tagCounts[tag] || 0;
           const active = selectedTags.includes(tag as ActivityTag);
@@ -138,7 +149,7 @@ export default function ActivityLibraryPage() {
                 color: active ? '#fff' : cfg.color,
                 border: active ? 'none' : `1px solid ${cfg.color}40`,
               }}>
-              {tag}
+              {tagStore.getDisplayName(tag)}
               <span className="text-[10px] opacity-70">({count})</span>
             </button>
           );
@@ -184,7 +195,7 @@ export default function ActivityLibraryPage() {
           <div>
             <label className="block text-sm text-gray-600 mb-1">标签</label>
             <div className="flex flex-wrap gap-1.5">
-              {allTags.map((tag) => {
+              {visibleTags.map((tag) => {
                 const cfg = tagStore.getTagConfig(tag);
                 return (
                   <button key={tag} onClick={() => setFormData({
@@ -196,7 +207,7 @@ export default function ActivityLibraryPage() {
                       backgroundColor: formData.tags.includes(tag as ActivityTag) ? cfg.color : cfg.bgColor,
                       color: formData.tags.includes(tag as ActivityTag) ? '#fff' : cfg.color,
                     }}>
-                    {tag}
+                    {tagStore.getDisplayName(tag)}
                   </button>
                 );
               })}
@@ -205,8 +216,28 @@ export default function ActivityLibraryPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">场地</label>
-              <input type="text" value={formData.venue} onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <input type="text" value={formData.venue}
+                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                placeholder="输入或选择..." />
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {venueStore.suggestions.map((v) => (
+                  <span key={v} className="inline-flex items-center gap-0.5">
+                    <button onClick={() => setFormData({ ...formData, venue: v })}
+                      className={`px-2 py-0.5 text-[10px] rounded-l-full border transition-colors ${
+                        formData.venue === v
+                          ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                          : 'bg-white border-warm-200 text-gray-500 hover:bg-warm-50'
+                      }`}>
+                      {v}
+                    </button>
+                    <button onClick={() => venueStore.removeSuggestion(v)}
+                      className="px-1 py-0.5 text-[10px] rounded-r-full border border-l-0 border-warm-200 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">最少组织人数</label>
@@ -227,12 +258,46 @@ export default function ActivityLibraryPage() {
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">购买链接</label>
-            <input type="text" value={formData.buyLink} onChange={(e) => setFormData({ ...formData, buyLink: e.target.value })}
-              placeholder="https://s.taobao.com/search?q=..." className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            {formData.buyLinks.map((link, i) => (
+              <div key={i} className="flex items-center gap-1 mb-1">
+                <input type="text" value={link.label} onChange={(e) => {
+                  const links = [...formData.buyLinks];
+                  links[i] = { ...links[i], label: e.target.value };
+                  setFormData({ ...formData, buyLinks: links });
+                }}
+                  placeholder="名称" className="w-20 px-2 py-1.5 border border-warm-200 rounded text-xs outline-none focus:ring-2 focus:ring-orange-400" />
+                <input type="text" value={link.url} onChange={(e) => {
+                  const links = [...formData.buyLinks];
+                  links[i] = { ...links[i], url: e.target.value };
+                  setFormData({ ...formData, buyLinks: links });
+                }}
+                  placeholder="https://..." className="flex-1 px-2 py-1.5 border border-warm-200 rounded text-xs outline-none focus:ring-2 focus:ring-orange-400" />
+                <button onClick={() => setFormData({ ...formData, buyLinks: formData.buyLinks.filter((_, j) => j !== i) })}
+                  className="px-2 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded">✕</button>
+              </div>
+            ))}
+            <div className="flex items-center gap-1">
+              <input type="text" value={newLinkLabel} onChange={e => setNewLinkLabel(e.target.value)}
+                placeholder="名称（如：淘宝）" className="w-20 px-2 py-1.5 border border-warm-200 rounded text-xs outline-none focus:ring-2 focus:ring-orange-400" />
+              <input type="text" value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)}
+                placeholder="输入购买链接..." className="flex-1 px-2 py-1.5 border border-warm-200 rounded text-xs outline-none focus:ring-2 focus:ring-orange-400" />
+              <button onClick={() => {
+                const url = newLinkUrl.trim();
+                if (!url) return;
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                  alert('请输入有效的链接（以 http:// 或 https:// 开头）');
+                  return;
+                }
+                setFormData({ ...formData, buyLinks: [...formData.buyLinks, { label: newLinkLabel.trim() || '购买链接', url }] });
+                setNewLinkLabel('');
+                setNewLinkUrl('');
+              }}
+                className="px-2 py-1.5 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">+</button>
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
-            <button onClick={handleAddActivity} className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600">添加</button>
+            <button onClick={handleAddActivity} className="px-4 py-2 text-sm bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">添加</button>
           </div>
         </div>
       </Modal>
@@ -256,23 +321,61 @@ export default function ActivityLibraryPage() {
               ))}
             </div>
             <button onClick={handleAddTag} disabled={!newTagName.trim()}
-              className="px-3 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 disabled:opacity-50">添加</button>
+              className="px-3 py-2 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 disabled:opacity-50">添加</button>
           </div>
 
           {/* 标签列表 */}
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2">
             {allTags.map((tag) => {
               const cfg = tagStore.getTagConfig(tag);
               const isCustom = tagStore.customTags.includes(tag);
+              const isHidden = tagStore.hiddenTags.includes(tag);
+              const displayName = tagStore.getDisplayName(tag);
+              if (isHidden) return null;
               return (
                 <div key={tag} className="flex items-center justify-between p-2 rounded-lg bg-warm-50">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: cfg.color }} />
-                    <span className="text-sm text-gray-700">{tag}</span>
-                    {isCustom && <span className="text-[10px] text-warm-400">(自定义)</span>}
-                    <span className="text-[10px] text-warm-400">({tagCounts[tag] || 0}个活动)</span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: cfg.color }} />
+                    {editingTag === tag ? (
+                      <input type="text" value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onBlur={async () => {
+                          if (editName.trim() && editName.trim() !== tag) {
+                            await tagStore.renameTag(tag, editName.trim());
+                          }
+                          setEditingTag(null);
+                        }}
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter') {
+                            if (editName.trim() && editName.trim() !== tag) {
+                              await tagStore.renameTag(tag, editName.trim());
+                            }
+                            setEditingTag(null);
+                          }
+                          if (e.key === 'Escape') setEditingTag(null);
+                        }}
+                        className="px-2 py-0.5 text-sm border border-orange-400 rounded outline-none focus:ring-2 focus:ring-orange-300 w-28"
+                        autoFocus />
+                    ) : (
+                      <span className="text-sm text-gray-700 truncate">{displayName}</span>
+                    )}
+                    {isCustom && <span className="text-[10px] text-warm-400 shrink-0">(自定义)</span>}
+                    <span className="text-[10px] text-warm-400 shrink-0">({tagCounts[tag] || 0}个活动)</span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 shrink-0">
+                    {/* 重命名 */}
+                    <button onClick={() => {
+                      if (editingTag === tag) {
+                        setEditingTag(null);
+                      } else {
+                        setEditingTag(tag);
+                        setEditName(displayName);
+                      }
+                    }}
+                      className="px-2 py-1 text-[10px] border border-warm-200 rounded hover:bg-warm-100">
+                      {editingTag === tag ? '取消' : '重命名'}
+                    </button>
+                    {/* 改色 */}
                     <div className="relative">
                       <button onClick={() => setColorPickerTag(colorPickerTag === tag ? null : tag)}
                         className="px-2 py-1 text-[10px] border border-warm-200 rounded hover:bg-warm-100">改色</button>
@@ -290,10 +393,16 @@ export default function ActivityLibraryPage() {
                         </div>
                       )}
                     </div>
-                    {isCustom && (
+                    {/* 预设标签：隐藏；自定义标签：删除 */}
+                    {isCustom ? (
                       <button onClick={() => tagStore.removeCustomTag(tag)}
                         className="px-2 py-1 text-[10px] text-red-500 hover:bg-red-50 rounded">
                         <X className="w-3 h-3" />
+                      </button>
+                    ) : (
+                      <button onClick={() => tagStore.toggleHiddenTag(tag)}
+                        className="px-2 py-1 text-[10px] text-warm-500 hover:bg-warm-100 rounded">
+                        隐藏
                       </button>
                     )}
                   </div>
@@ -301,6 +410,36 @@ export default function ActivityLibraryPage() {
               );
             })}
           </div>
+
+          {/* 隐藏的预设标签 */}
+          {hiddenPresetTags.length > 0 && (
+            <div>
+              <button onClick={() => setShowHiddenTags(!showHiddenTags)}
+                className="flex items-center gap-1 text-xs text-warm-400 hover:text-warm-600 transition-colors">
+                已隐藏标签 ({hiddenPresetTags.length})
+                <span className={`transition-transform ${showHiddenTags ? 'rotate-180' : ''}`}>▾</span>
+              </button>
+              {showHiddenTags && (
+                <div className="mt-2 space-y-2">
+                  {hiddenPresetTags.map((tag) => {
+                    const cfg = tagStore.getTagConfig(tag);
+                    return (
+                      <div key={tag} className="flex items-center justify-between p-2 rounded-lg bg-warm-50 opacity-60">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: cfg.color }} />
+                          <span className="text-sm text-gray-500">{tagStore.getDisplayName(tag)}</span>
+                        </div>
+                        <button onClick={() => tagStore.toggleHiddenTag(tag)}
+                          className="px-2 py-1 text-[10px] text-indigo-600 hover:bg-indigo-50 rounded">
+                          恢复显示
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -312,7 +451,7 @@ export default function ActivityLibraryPage() {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="no-print fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600 transition-all hover:scale-110 flex items-center justify-center"
+          className="no-print fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-indigo-500 text-white shadow-lg hover:bg-indigo-600 transition-all hover:scale-110 flex items-center justify-center"
           aria-label="回到顶部"
         >
           <ArrowUp className="w-5 h-5" />

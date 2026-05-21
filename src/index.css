@@ -5,76 +5,12 @@
   --color-warm-100: #fff0dd;
   --color-warm-200: #fde0b8;
   --color-warm-300: #fbc98a;
-  --color-warm-400: #f8ab54;
-  --color-warm-500: #f58f2e;
-  --color-warm-600: #e67414;
-  --color-warm-700: #bf5c12;
-  --color-warm-800: #974a16;
-  --color-warm-900: #7a3d15;
-  --color-primary: #e67414;
-  --color-primary-hover: #bf5c12;
-}
-
-body {
-  margin: 0;
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  background: #fef7f0;
-  color: #4a3728;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-  html, body {
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-  }
-
-  /* 打印表格样式 */
-  table {
-    font-size: 12px !important;
-    width: 100% !important;
-  }
-  th, td {
-    padding: 5px 4px !important;
-  }
-
-  /* 打印内容块铺满A4 */
-  .print-full-page {
-    min-height: 100vh !important;
-    height: 100% !important;
-  }
-
-  /* 强制打印背景色（主题风格） */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* 打印内容块不跨页 */
-  .print-block {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  /* 移除页面边距，撑满A4 */
-  #root {
-    width: 100% !important;
-    max-width: 100% !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
+  --color-warm-400: #a78bfa;
+  --color-warm-500: #8b5cf6;
+  --color-warm-600: #7c3aed;
+  --color-warm-700: #6d28d9;
+  --color-warm-800: #9a440b;
+  --color-warm-900: #7c3709;
 }
 
 /* Scrollbar style */
@@ -90,4 +26,26 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #f8ab54;
+}
+
+/* Print utilities */
+@media screen {
+  /* 屏幕下只让表格外层背景透明，保留单元格风格配色 */
+  .print-full-page {
+    background-color: transparent !important;
+  }
+}
+
+@media print {
+  .no-print,
+  [class*="print:hidden"] {
+    display: none !important;
+  }
+
+  .print-full-page,
+  .print-full-page td,
+  .print-full-page th {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }

@@ -753,8 +753,8 @@ export default function ElderlyPage() {
                                 {hasAfternoon && (
                                   <div className={`text-[13px] leading-tight px-1 py-[1px] rounded truncate text-center ${
                                     afternoonParticipated
-                                      ? 'bg-orange-100 text-orange-700'
-                                      : 'bg-orange-50/50 text-orange-400'
+                                      ? 'bg-indigo-100 text-indigo-700'
+                                      : 'bg-indigo-50/50 text-orange-400'
                                   }`}>
                                     {afternoonName || '下午'}
                                   </div>
@@ -774,10 +774,10 @@ export default function ElderlyPage() {
                       <span className="w-2.5 h-2.5 rounded bg-blue-50/50 border border-blue-200" /> 上午未参加
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded bg-orange-100" /> 下午已参加
+                      <span className="w-2.5 h-2.5 rounded bg-indigo-100" /> 下午已参加
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded bg-orange-50/50 border border-orange-200" /> 下午未参加
+                      <span className="w-2.5 h-2.5 rounded bg-indigo-50/50 border border-indigo-200" /> 下午未参加
                     </div>
                   </div>
                 </div>

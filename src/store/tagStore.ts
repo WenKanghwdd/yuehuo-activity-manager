@@ -24,31 +24,46 @@ interface TagState {
   tags: Record<string, TagConfig>;
   loaded: boolean;
   customTags: string[];
+  hiddenTags: string[];
+  tagDisplayNames: Record<string, string>;
   loadTags: () => Promise<void>;
   getTagConfig: (tagName: string) => TagConfig;
+  getDisplayName: (tagName: string) => string;
   updateTagColor: (tagName: string, color: string, bgColor: string) => Promise<void>;
   addCustomTag: (name: string, color: string) => Promise<void>;
   removeCustomTag: (name: string) => Promise<void>;
-}
+  toggleHiddenTag: (name: string) => Promise<void>;
+  renameTag: (oldName: string, newName: string) => Promise<void>;
+}  
 
 export const useTagStore = create<TagState>((set, get) => ({
   tags: { ...DEFAULT_TAG_COLORS },
   loaded: false,
   customTags: [],
+  hiddenTags: [],
+  tagDisplayNames: {},
 
   loadTags: async () => {
     const data = await getAll<{ key: string; value: unknown }>('settings');
     const saved = data.find((s: any) => s.key === 'tagColors') as any;
     const custom = data.find((s: any) => s.key === 'customTags') as any;
+    const hidden = data.find((s: any) => s.key === 'hiddenTags') as any;
+    const displayNames = data.find((s: any) => s.key === 'tagDisplayNames') as any;
     set({
       tags: saved?.colors ? { ...DEFAULT_TAG_COLORS, ...saved.colors } : { ...DEFAULT_TAG_COLORS },
       customTags: custom?.list || [],
+      hiddenTags: hidden?.list || [],
+      tagDisplayNames: displayNames?.map || {},
       loaded: true,
     });
   },
 
   getTagConfig: (tagName) => {
     return get().tags[tagName] || { name: tagName, color: '#e67414', bgColor: '#fff0dd' };
+  },
+
+  getDisplayName: (tagName) => {
+    return get().tagDisplayNames[tagName] || tagName;
   },
 
   updateTagColor: async (tagName, color, bgColor) => {
@@ -72,5 +87,19 @@ export const useTagStore = create<TagState>((set, get) => ({
     await putItem('settings', { key: 'tagColors', colors: tags });
     await putItem('settings', { key: 'customTags', list: customTags });
     set({ tags, customTags });
+  },
+
+  toggleHiddenTag: async (name) => {
+    const hiddenTags = get().hiddenTags.includes(name)
+      ? get().hiddenTags.filter(t => t !== name)
+      : [...get().hiddenTags, name];
+    await putItem('settings', { key: 'hiddenTags', list: hiddenTags });
+    set({ hiddenTags });
+  },
+
+  renameTag: async (oldName, newName) => {
+    const tagDisplayNames = { ...get().tagDisplayNames, [oldName]: newName };
+    await putItem('settings', { key: 'tagDisplayNames', map: tagDisplayNames });
+    set({ tagDisplayNames });
   },
 }));

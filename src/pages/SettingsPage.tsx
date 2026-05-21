@@ -6,7 +6,7 @@ import { exportToExcel } from '../utils/helpers';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import type { ActivityRecord } from '../types';
 import { useFileStore, pickFileLocation, disconnectFile } from '../fileStore';
-import { isElectron, useDesktopStore, saveToFile } from '../electronFileStore';
+import { isElectron, useDesktopStore } from '../electronFileStore';
 import { useBrandStore } from '../store/brandStore';
 import { useTemplateStore } from '../store/templateStore';
 

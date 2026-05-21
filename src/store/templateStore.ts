@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { getAll, putItem, deleteItem } from '../db';
+import { getAll, putItem } from '../db';
 
 // ===== 类型定义 =====
 

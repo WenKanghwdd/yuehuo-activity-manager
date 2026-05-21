@@ -21,7 +21,7 @@ interface VenueState {
 }
 
 export const useVenueStore = create<VenueState>((set, get) => ({
-  suggestions: [],
+  suggestions: ['活动大厅', '多功能厅', '活动室', '手工室', '棋牌室', '阅览室', '户外广场', '花园/阳台', '食堂', '户外公园'],
   activityVenues: {},
   loaded: false,
   editing: null,
@@ -31,9 +31,10 @@ export const useVenueStore = create<VenueState>((set, get) => ({
 
     const venueSetting = data.find((s: any) => s.key === 'venueSuggestions');
     const activityVenueSetting = data.find((s: any) => s.key === 'activityVenues');
+    const defaults = ['活动大厅', '多功能厅', '活动室', '手工室', '棋牌室', '阅览室', '户外广场', '花园/阳台', '食堂', '户外公园'];
 
     set({
-      suggestions: (venueSetting as any)?.venues || [],
+      suggestions: (venueSetting as any)?.venues || defaults,
       activityVenues: (activityVenueSetting as any)?.map || {},
       loaded: true,
     });

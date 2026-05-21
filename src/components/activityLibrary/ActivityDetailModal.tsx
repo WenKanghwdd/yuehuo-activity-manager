@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, AlertTriangle, ShoppingCart, CalendarPlus, Edit3, Save, ImagePlus, Upload } from 'lucide-react';
+import { X, AlertTriangle, ShoppingCart, CalendarPlus, Edit3, Save, ImagePlus, Upload, Crop } from 'lucide-react';
 import type { Activity, ActivityTag } from '../../types';
 import { ACTIVITY_TAGS } from '../../types';
 import { useActivityLibraryStore } from '../../store/activityLibraryStore';
+import ImageCropper from '../common/ImageCropper';
+import { useVenueStore } from '../../store/venueStore';
 
 interface ActivityDetailModalProps {
   activity: Activity;
@@ -18,20 +20,23 @@ export default function ActivityDetailModal({
   onAddToPlan,
 }: ActivityDetailModalProps) {
   const { updateActivity } = useActivityLibraryStore();
+  const venueStore = useVenueStore();
   const [editing, setEditing] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const safeAct = activity || { id:'', name:'', tags:[], images:[], description:'', venue:'', equipment:[], minStaff:1, safetyTips:'', buyLink:'' };
+  const safeAct = activity || { id:'', name:'', tags:[], images:[], description:'', venue:'', equipment:[], minStaff:1, safetyTips:'', buyLinks:[] };
   const [form, setForm] = useState({ ...safeAct, equipment: safeAct.equipment.join('\n') });
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [buyLinkEdit, setBuyLinkEdit] = useState(false);
-  const [buyLinkVal, setBuyLinkVal] = useState(safeAct.buyLink);
+  const [croppingIndex, setCroppingIndex] = useState<number | null>(null);
+  const [showVenuePicker, setShowVenuePicker] = useState(false);
+  const [newVenue, setNewVenue] = useState('');
+  const [newLinkLabel, setNewLinkLabel] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
 
   useEffect(() => {
+    if (!venueStore.loaded) venueStore.loadAll();
     if (open) {
       setForm({ ...activity, equipment: activity.equipment.join('\n') });
-      setBuyLinkVal(activity.buyLink);
       setEditing(false);
-      setBuyLinkEdit(false);
     }
   }, [open, activity]);
 
@@ -41,7 +46,6 @@ export default function ActivityDetailModal({
     await updateActivity({
       ...form,
       equipment: form.equipment.split('\n').filter(Boolean),
-      buyLink: buyLinkVal,
     });
     setEditing(false);
     setDirty(false);
@@ -138,13 +142,19 @@ export default function ActivityDetailModal({
           <div>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {form.images.map((img, i) => (
-                <div key={i} className="relative shrink-0">
+                <div key={i} className="relative shrink-0 group">
                   <img src={img} alt={`${form.name} 图片${i + 1}`} className="w-48 h-32 object-cover rounded-lg border border-warm-100" />
                   {editing && (
-                    <button onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded text-[10px] hover:bg-red-600">
-                      ✕
-                    </button>
+                    <div className="absolute top-1 right-1 flex gap-0.5">
+                      <button onClick={() => setCroppingIndex(i)}
+                        className="p-0.5 bg-indigo-500 text-white rounded-l text-[10px] hover:bg-indigo-600">
+                        <Crop className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => removeImage(i)}
+                        className="p-0.5 bg-red-500 text-white rounded-r text-[10px] hover:bg-red-600">
+                        ✕
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -207,9 +217,47 @@ export default function ActivityDetailModal({
             <div className="text-sm text-warm-600 space-y-2">
               {editing ? (
                 <>
-                  <div><span className="font-medium text-warm-700">所需场所：</span>
-                    <input type="text" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })}
-                      className="ml-1 px-2 py-1 border border-warm-200 rounded text-sm outline-none focus:ring-2 focus:ring-warm-400 w-full mt-1" />
+                  <div className="relative">
+                    <span className="font-medium text-warm-700">所需场所：</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <input type="text" value={form.venue} onChange={(e) => { setForm({ ...form, venue: e.target.value }); setShowVenuePicker(true); }}
+                        onFocus={() => setShowVenuePicker(true)}
+                        className="flex-1 px-2 py-1 border border-warm-200 rounded text-sm outline-none focus:ring-2 focus:ring-warm-400"
+                        placeholder="输入或选择场所..." />
+                    </div>
+                    {showVenuePicker && (
+                      <div className="mt-1 flex flex-wrap gap-1" onMouseLeave={() => setShowVenuePicker(false)}>
+                        {venueStore.suggestions.map((v) => (
+                          <span key={v} className="inline-flex items-center gap-0">
+                            <button onClick={() => { setForm({ ...form, venue: v }); setShowVenuePicker(false); }}
+                              className={`px-2 py-0.5 text-xs rounded-l-full border transition-colors ${
+                                form.venue === v
+                                  ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                                  : 'bg-white border-warm-200 text-gray-600 hover:bg-warm-50'
+                              }`}>
+                              {v}
+                            </button>
+                            <button onClick={() => venueStore.removeSuggestion(v)}
+                              className="px-1.5 py-0.5 text-xs rounded-r-full border border-l-0 border-warm-200 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        <div className="flex items-center gap-1">
+                          <input type="text" value={newVenue} onChange={e => setNewVenue(e.target.value)}
+                            placeholder="新增场所..." className="w-24 px-1.5 py-0.5 text-xs border border-warm-200 rounded outline-none focus:ring-1 focus:ring-orange-400" />
+                          <button onClick={async () => {
+                            if (newVenue.trim()) {
+                              await venueStore.addSuggestion(newVenue.trim());
+                              setForm({ ...form, venue: newVenue.trim() });
+                              setNewVenue('');
+                              setShowVenuePicker(false);
+                            }
+                          }}
+                            className="px-2 py-0.5 text-[10px] bg-indigo-500 text-white rounded hover:bg-indigo-600">添加</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <span className="font-medium text-warm-700">器具列表（每行一个）：</span>
@@ -251,39 +299,111 @@ export default function ActivityDetailModal({
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3 pt-2">
-            {buyLinkEdit ? (
-              <div className="flex items-center gap-2 w-full">
-                <input type="text" value={buyLinkVal} onChange={(e) => setBuyLinkVal(e.target.value)}
-                  placeholder="输入购买链接..." className="flex-1 px-3 py-2 border border-warm-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-warm-400" />
-                <button onClick={() => { setBuyLinkEdit(false); handleSave(); }}
-                  className="px-3 py-2 bg-warm-500 text-white rounded-lg text-sm">保存链接</button>
+          {/* 购买链接 */}
+          <div className="bg-warm-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-warm-700 flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4 text-warm-500" />
+                购买链接
+              </h3>
+            </div>
+            <div className="space-y-1.5">
+              {(form.buyLinks || []).map((link, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  {editing ? (
+                    <>
+                      <input type="text" value={link.label} onChange={(e) => {
+                        const links = [...(form.buyLinks || [])];
+                        links[i] = { ...links[i], label: e.target.value };
+                        setForm({ ...form, buyLinks: links });
+                        setDirty(true);
+                      }}
+                        className="w-16 px-1.5 py-1 text-xs border border-warm-200 rounded outline-none focus:ring-1 focus:ring-warm-400" />
+                      <input type="text" value={link.url} onChange={(e) => {
+                        const links = [...(form.buyLinks || [])];
+                        links[i] = { ...links[i], url: e.target.value };
+                        setForm({ ...form, buyLinks: links });
+                        setDirty(true);
+                      }}
+                        className="flex-1 px-1.5 py-1 text-xs border border-warm-200 rounded outline-none focus:ring-1 focus:ring-warm-400" />
+                      <button onClick={() => {
+                        setForm({ ...form, buyLinks: (form.buyLinks || []).filter((_, j) => j !== i) });
+                        setDirty(true);
+                      }}
+                        className="px-1.5 py-1 text-xs text-red-500 hover:bg-red-50 rounded">✕</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs text-gray-500 w-14 shrink-0 truncate">{link.label}</span>
+                      <span className="flex items-center gap-1">
+                        {(() => {
+                          const valid = link.url && (link.url.startsWith('http://') || link.url.startsWith('https://'));
+                          return valid ? (
+                            <a href={link.url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2 py-1 bg-indigo-500 text-white rounded text-xs hover:bg-indigo-600 transition-colors shrink-0">
+                              <ShoppingCart className="w-3 h-3" />
+                              打开
+                            </a>
+                          ) : (
+                            <span className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-600 rounded text-xs" title={link.url || '链接为空'}>
+                              ⚠ 链接无效
+                            </span>
+                          );
+                        })()}
+                      </span>
+                    </>
+                  )}
+                </div>
+              ))}
+              {editing && (
+                <div className="flex items-center gap-1 pt-1">
+                  <input type="text" value={newLinkLabel} onChange={e => setNewLinkLabel(e.target.value)}
+                    placeholder="名称" className="w-16 px-1.5 py-1 text-xs border border-warm-200 rounded outline-none focus:ring-1 focus:ring-orange-400" />
+                  <input type="text" value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)}
+                    placeholder="输入新链接..." className="flex-1 px-1.5 py-1 text-xs border border-warm-200 rounded outline-none focus:ring-1 focus:ring-orange-400" />
+                  <button onClick={() => {
+                    const url = newLinkUrl.trim();
+                    if (!url) return;
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                      alert('请输入有效的链接（以 http:// 或 https:// 开头）');
+                      return;
+                    }
+                    setForm({ ...form, buyLinks: [...(form.buyLinks || []), { label: newLinkLabel.trim() || '链接', url }] });
+                    setNewLinkLabel('');
+                    setNewLinkUrl('');
+                    setDirty(true);
+                  }}
+                    className="px-2 py-1 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">+ 添加</button>
+                </div>
+              )}
+            </div>
+            {onAddToPlan && (
+              <div className="mt-3 pt-3 border-t border-warm-200">
+                <button onClick={() => onAddToPlan(activity)}
+                  className="flex items-center gap-1.5 px-3 py-2 border border-warm-300 text-warm-700 rounded-lg hover:bg-warm-50 transition-colors text-xs font-medium">
+                  <CalendarPlus className="w-3 h-3" />
+                  添加到周计划
+                </button>
               </div>
-            ) : (
-              <>
-                {activity.buyLink && (
-                  <a href={editing ? '#' : activity.buyLink} target="_blank" rel="noopener noreferrer"
-                    onClick={(e) => { if (editing) { e.preventDefault(); setBuyLinkEdit(true); } }}
-                    onContextMenu={(e) => { e.preventDefault(); setBuyLinkEdit(true); }}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-warm-500 text-white rounded-lg hover:bg-warm-600 transition-colors text-sm font-medium">
-                    <ShoppingCart className="w-4 h-4" />
-                    一键购买素材
-                    {editing && <span className="text-[10px] opacity-70">(右键改链接)</span>}
-                  </a>
-                )}
-                {onAddToPlan && (
-                  <button onClick={() => onAddToPlan(activity)}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-warm-700 rounded-lg hover:bg-warm-50 transition-colors text-sm font-medium">
-                    <CalendarPlus className="w-4 h-4" />
-                    添加到周计划
-                  </button>
-                )}
-              </>
             )}
           </div>
         </div>
       </div>
+
+      {/* Image Cropper */}
+      {croppingIndex !== null && form.images[croppingIndex] && (
+        <ImageCropper
+          image={form.images[croppingIndex]}
+          onCrop={(cropped) => {
+            const newImages = [...form.images];
+            newImages[croppingIndex] = cropped;
+            setForm({ ...form, images: newImages });
+            setDirty(true);
+            setCroppingIndex(null);
+          }}
+          onClose={() => setCroppingIndex(null)}
+        />
+      )}
     </div>
   );
 }

@@ -113,6 +113,13 @@ export default function WeeklyPlanPage() {
     useWeeklyPlanStore.getState().loadOrCreatePlan(targetWeekStart);
   }, [targetWeekStart]);
 
+  // 同步 plan 的主题到 app 主题状态
+  useEffect(() => {
+    if (currentPlan?.theme && currentPlan.theme !== currentTheme) {
+      setAppTheme(currentPlan.theme);
+    }
+  }, [currentPlan?.id, currentPlan?.theme]);
+
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     pageStyle: `@page { size: A4 landscape; margin: 5mm; }`,
@@ -551,8 +558,8 @@ export default function WeeklyPlanPage() {
 
       {/* ===== 周计划表（打印区域，含标题） ===== */}
       <div ref={printRef}
-        className="w-full max-w-[297mm] mx-auto print-full-page"
-        style={{ minWidth: '700px', backgroundColor: theme.bg }}>
+        className="w-full mx-auto print-full-page"
+        style={{ minWidth: '700px' }}>
 
         {/* 系统品牌标识 — 打印始终显示，不可移除 */}
         <div className="hidden print:flex items-center gap-2 mb-2 px-2">
@@ -588,8 +595,8 @@ export default function WeeklyPlanPage() {
           );
         })()}
 
-        <table className="w-full border-collapse text-xs print:text-sm border-2"
-          style={{ backgroundColor: theme.bg, tableLayout: 'fixed', borderColor: theme.border }}>
+        <table className="w-full border-collapse text-xs border-2 print-full-page"
+          style={{ tableLayout: 'fixed', borderColor: theme.border, backgroundColor: theme.bg }}>
           <colgroup>
             <col style={{ width: '70px' }} />
             {[1, 2, 3, 4, 5, 6, 7].map((d) => <col key={d} style={{ width: 'auto' }} />)}
@@ -604,7 +611,7 @@ export default function WeeklyPlanPage() {
                 <th key={day} className="p-1.5 text-center font-black border-2 text-sm print:text-lg"
                   style={{fontFamily:'SimHei,sans-serif', backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.border }}>
                   <div>{WEEKDAY_NAMES[day]}</div>
-                  <div className="text-[10px] print:text-sm font-normal opacity-80">
+                  <div className="text-[10px] font-normal opacity-80">
                     {currentPlan ? (() => {
                       const d = new Date(currentPlan.weekStart);
                       d.setDate(d.getDate() + day - 1);
@@ -621,10 +628,10 @@ export default function WeeklyPlanPage() {
                 {/* 左侧时段标 — 只在这里显示时间 */}
                 <td className="p-2 text-center border-2 align-middle"
                   style={{ backgroundColor: theme.bg, color: theme.cellText, borderColor: theme.border }}>
-                  <div className="font-black text-sm print:text-lg">{SLOT_LABELS[slotId]}</div>
-                  <div className="text-[10px] print:text-sm text-warm-500 leading-tight flex flex-col items-center">
+                  <div className="font-black text-lg">{SLOT_LABELS[slotId]}</div>
+                  <div className="text-[10px] text-warm-500 leading-tight flex flex-col items-center">
                     <span>{currentPlan?.timeConfig?.[1]?.[slotId]?.startTime || '?'}</span>
-                    <span className="text-[8px] print:text-[10px] text-warm-400">至</span>
+                    <span className="text-[8px] text-warm-400">至</span>
                     <span>{currentPlan?.timeConfig?.[1]?.[slotId]?.endTime || '?'}</span>
                   </div>
                 </td>
@@ -643,8 +650,8 @@ export default function WeeklyPlanPage() {
                         backgroundColor: theme.cellBg,
                         color: theme.cellText,
                         borderColor: theme.border,
-                        height: '200px',
-                        minHeight: '200px',
+                        height: '160px',
+                        minHeight: '160px',
                       }}
                       onClick={() => { setPickSlot({ slotId, weekday: day }); setSearchQuery(''); }}
                     >
@@ -655,7 +662,7 @@ export default function WeeklyPlanPage() {
                             <img src={cell.imageBase64} alt="活动图片"
                               className="w-full object-cover rounded border"
                               style={{
-                                height: `${cell.imageHeight || 80}px`,
+                                height: `${cell.imageHeight || 60}px`,
                                 borderColor: theme.border,
                                 objectPosition: `${cell.imageOffsetX ?? 50}% ${cell.imageOffsetY ?? 50}%`,
                               }} />
@@ -739,7 +746,7 @@ export default function WeeklyPlanPage() {
                         >
                           {activityName ? (
                             <span
-                              className="text-[17px] print:text-lg font-black leading-tight"
+                              className="text-[17px] font-black leading-tight"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (act) setDetailActivity(act);
@@ -783,7 +790,7 @@ export default function WeeklyPlanPage() {
                           onChange={(e) => doUpdateCell(slotId, day as Weekday, { note: e.target.value })}
                           placeholder="提醒..."
                           rows={2}
-                          className={`w-full text-center text-xs print:text-sm leading-tight px-1 py-0.5 rounded resize-vertical outline-none ${
+                          className={`w-full text-center text-xs leading-tight px-1 py-0.5 rounded resize-vertical outline-none ${
                             outdoor ? 'text-red-600 font-semibold' : 'text-warm-500'
                           }`}
                           style={{
@@ -805,7 +812,34 @@ export default function WeeklyPlanPage() {
         {templ?.hasWeather !== false && (
         <div className="mt-3 print:mt-2">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="text-xl print:text-2xl font-black text-warm-700 " style={{fontFamily:"Microsoft YaHei,MicrosoftYaHei,sans-serif"}}>🌤 天气变化提醒</span>
+            <span className="text-xl font-black text-warm-700 " style={{fontFamily:"Microsoft YaHei,MicrosoftYaHei,sans-serif"}}>🌤 天气变化提醒</span>
+          </div>
+          {/* 天气预设 — 南京地区 */}
+          <div className="flex flex-wrap justify-center gap-1.5 mb-2 no-print">
+            {[
+              '晴好☀️ 气温15-22°C，适宜户外活动',
+              '多云⛅ 注意早晚温差，及时添衣',
+              '阴雨🌧️ 备好雨具，户外活动注意防滑',
+              '降温❄️ 最低8°C，注意老人保暖',
+              '升温🔥 最高28°C，户外注意防晒补水',
+              '大风🌬️ 注意防风，减少户外活动',
+              '雾霾😷 空气质量不佳，减少外出',
+            ].map((w) => (
+              <button key={w} onClick={async () => {
+                if (currentPlan) {
+                  const { putItem } = await import('../db');
+                  await putItem('weeklyPlans', { ...currentPlan, weatherReminder: w });
+                  useWeeklyPlanStore.getState().loadOrCreatePlan(currentPlan.weekStart);
+                }
+              }}
+                className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
+                  currentPlan?.weatherReminder === w
+                    ? 'bg-warm-500 text-white border-warm-500'
+                    : 'bg-white text-warm-600 border-warm-200 hover:bg-warm-50'
+                }`}>
+                {w}
+              </button>
+            ))}
           </div>
           <div
             contentEditable

@@ -15,11 +15,11 @@ export default function Layout() {
   return (
     <>
       {/* Top Navigation Bar — fixed at top */}
-      <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50 }} className="no-print flex h-14 items-center bg-white border-b border-warm-200 shadow-sm px-4 lg:px-6">
+      <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, background: 'linear-gradient(135deg, #7B68EE 0%, #E6A8D7 100%)' }} className="no-print flex h-14 items-center shadow-md px-4 lg:px-6">
         {/* Logo */}
         <div className="flex items-center gap-2 shrink-0">
-          <img src="./logo.svg" alt="悦活" className="h-9 w-auto" />
-          <span className="text-base font-bold text-warm-800 hidden sm:inline">悦活</span>
+          <img src="./logo.svg" alt="悦活" className="h-8 w-auto brightness-0 invert" />
+          <span className="text-base font-bold text-white hidden sm:inline tracking-wide">悦活</span>
         </div>
 
         {/* Desktop nav links */}
@@ -30,10 +30,10 @@ export default function Layout() {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-2 px-4 py-1.5 rounded-lg text-base font-bold transition-all duration-200 ${
                   isActive
-                    ? 'bg-red-50 text-red-700'
-                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
+                    ? 'bg-white/20 text-white shadow-sm'
+                    : 'text-white/60 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
@@ -46,21 +46,22 @@ export default function Layout() {
         {/* Mobile hamburger */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden rounded-lg p-1.5 text-warm-600 hover:bg-warm-100 ml-auto transition-colors"
+          className="md:hidden rounded-lg p-1.5 text-white/60 hover:bg-white/10 ml-auto transition-colors"
           aria-label="切换菜单"
         >
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
         {/* Version tag */}
-        <span className="hidden lg:inline text-xs text-warm-300 ml-auto">v1.0</span>
+        <span className="hidden lg:inline text-xs text-white/30 ml-auto">v1.0</span>
       </header>
 
       {/* Mobile overlay + dropdown */}
       {menuOpen && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setMenuOpen(false)} />
-          <div className="fixed top-14 left-0 right-0 z-40 bg-white border-b border-warm-200 shadow-lg md:hidden">
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <div className="fixed top-14 left-0 right-0 z-40 shadow-xl md:hidden"
+            style={{ background: 'linear-gradient(180deg, #7B68EE 0%, #E6A8D7 100%)' }}>
             <nav className="flex flex-col p-2">
               {navItems.map((item) => (
                 <NavLink
@@ -69,10 +70,10 @@ export default function Layout() {
                   end={item.path === '/'}
                   onClick={() => setMenuOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    `flex items-center gap-3 px-4 py-3.5 rounded-lg text-base font-bold transition-all duration-200 ${
                       isActive
-                        ? 'bg-red-50 text-red-700'
-                        : 'text-warm-600 hover:bg-warm-50'
+                        ? 'bg-white/20 text-white shadow-sm'
+                        : 'text-white/60 hover:bg-white/10 hover:text-white'
                     }`
                   }
                 >
@@ -86,7 +87,7 @@ export default function Layout() {
       )}
 
       {/* Page content — offset for fixed header */}
-      <main className="min-h-screen bg-warm-50 px-4 sm:px-6 lg:px-8 pt-14 pb-4 print:p-0">
+      <main className="min-h-screen bg-gradient-to-b from-purple-50 to-warm-50 px-4 sm:px-6 lg:px-8 pt-14 pb-4 print:p-0 print:bg-white">
         <Outlet />
       </main>
     </>

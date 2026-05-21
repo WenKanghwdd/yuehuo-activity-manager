@@ -72,7 +72,7 @@ export default function ActivationDialog() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-center">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5 text-center">
           <Shield className="w-10 h-10 text-white mx-auto mb-2" />
           <h2 className="text-lg font-bold text-white">悦活 - 软件激活</h2>
           <p className="text-sm text-amber-50 mt-1">输入激活码以解锁全部功能</p>
@@ -110,7 +110,7 @@ export default function ActivationDialog() {
               onKeyDown={e => e.key === 'Enter' && handleActivate()}
               placeholder="请输入管理员提供的激活码"
               maxLength={16}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono tracking-widest text-center outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono tracking-widest text-center outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               autoFocus
             />
           </div>
@@ -133,7 +133,7 @@ export default function ActivationDialog() {
           <button
             onClick={handleActivate}
             disabled={!userCode.trim() || state.verifying}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-lg font-medium text-sm hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {state.verifying ? (
               <span className="flex items-center gap-2">

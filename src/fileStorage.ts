@@ -10,7 +10,7 @@
  */
 
 import { openDB } from 'idb';
-import { getAll, putItem, clearStore, getDB } from './db';
+import { getAll, clearStore, getDB } from './db';
 
 // ===== 文件句柄存储（用独立的 IndexedDB 数据库，避免和业务数据混淆） =====
 

@@ -70,17 +70,25 @@ export default function ActivityCard({ activity, onClick, onSelect, showSelect }
         <div className="flex gap-2 pt-1">
           {showSelect && onSelect && (
             <button onClick={onSelect}
-              className="flex-1 px-3 py-1.5 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+              className="flex-1 px-3 py-1.5 text-sm bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
               选择此活动
             </button>
           )}
-          {activity.buyLink && (
-            <a href={activity.buyLink} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm bg-white border border-warm-200 text-gray-600 rounded-lg hover:border-orange-300 hover:text-orange-600 transition-colors">
-              <ShoppingBag className="w-3.5 h-3.5" />
-              购买素材
-            </a>
-          )}
+          {(activity.buyLinks && activity.buyLinks.length > 0) && (() => {
+            const link = activity.buyLinks[0];
+            const valid = link.url && (link.url.startsWith('http://') || link.url.startsWith('https://'));
+            return valid ? (
+              <a href={link.url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm bg-white border border-warm-200 text-gray-600 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-colors">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                {link.label}
+              </a>
+            ) : (
+              <span className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm bg-red-50 border border-red-200 text-red-500 rounded-lg">
+                ⚠ 链接无效
+              </span>
+            );
+          })()}
         </div>
 
         {/* Equipment list */}

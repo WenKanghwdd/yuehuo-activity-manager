@@ -29,16 +29,40 @@ export const useActivityLibraryStore = create<ActivityLibraryState>((set, get) =
 
   loadActivities: async () => {
     set({ loading: true });
-    const activities = await getAll<Activity>('activities');
-    if (activities.length === 0) {
-      // Load default activities
-      const defaults = DEFAULT_ACTIVITIES.map(a => ({ ...a, id: generateId() }));
-      for (const act of defaults) {
-        await putItem('activities', act);
+    let activities = await getAll<Activity>('activities');
+    // Migrate old buyLink format to buyLinks
+    let migrated = false;
+    activities = activities.map(a => {
+      if ((a as any).buyLink && !a.buyLinks) {
+        migrated = true;
+        return { ...a, buyLinks: [{ label: '购买链接', url: (a as any).buyLink }], buyLink: undefined };
       }
-      set({ activities: defaults, loaded: true, loading: false });
-    } else {
+      return a;
+    });
+    if (migrated) {
+      for (const a of activities) {
+        await putItem('activities', { ...a, buyLink: undefined });
+      }
+    }
+    const existingNames = new Set(activities.map(a => a.name));
+    // Inject any default activities that don't exist yet
+    let hasNew = false;
+    for (const def of DEFAULT_ACTIVITIES) {
+      if (!existingNames.has(def.name)) {
+        const newAct = { ...def, id: generateId() };
+        await putItem('activities', newAct);
+        activities.push(newAct);
+        hasNew = true;
+      }
+    }
+    if (hasNew) {
       set({ activities, loaded: true, loading: false });
+    } else {
+      set({
+        activities: activities.length > 0 ? activities : DEFAULT_ACTIVITIES.map(a => ({ ...a, id: generateId() })),
+        loaded: true,
+        loading: false,
+      });
     }
   },
 

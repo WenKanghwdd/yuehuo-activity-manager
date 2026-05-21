@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getAll, putItem, clearStore, getDB } from './db';
+import { getAll, clearStore, getDB } from './db';
 import { useElderlyStore } from './store/elderlyStore';
 import { useActivityRecordStore } from './store/activityRecordStore';
 import { useWeeklyPlanStore } from './store/weeklyPlanStore';
