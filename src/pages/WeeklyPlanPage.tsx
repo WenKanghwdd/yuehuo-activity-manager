@@ -537,14 +537,17 @@ export default function WeeklyPlanPage() {
           <RotateCcw className="w-4 h-4" /> 重置内容
         </button>
         <div className="flex-1" />
-        <select onChange={() => handlePrint?.()}
-          className="px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-700 bg-white">
-          <option value="A4">A4 横向</option>
-          <option value="A3">A3 横向</option>
+        <select className="px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-700 bg-white opacity-50">
+          <option>A4 横向</option>
         </select>
-        <button onClick={() => handlePrint?.()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-warm-500 text-white rounded-lg hover:bg-warm-600 text-sm font-medium transition-colors">
-          <Printer className="w-4 h-4" /> 打印
+        <button onClick={handleExportPDF} disabled={printing}
+          className="flex items-center gap-1.5 px-4 py-2 bg-warm-500 text-white rounded-lg hover:bg-warm-600 text-sm font-medium transition-colors disabled:opacity-50">
+          {printing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <FileDown className="w-4 h-4" />
+          )}
+          {printing ? '导出中...' : '导出PDF'}
         </button>
       </div>
 

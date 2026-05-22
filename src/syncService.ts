@@ -101,11 +101,17 @@ export async function syncAll(
   return { pushed: totalPushed, pulled: totalPulled };
 }
 
-/** 检查 Supabase 连接状态 */
+/** 检查 Supabase 连接状态（不依赖表权限） */
 export async function checkConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from('activities').select('id', { count: 'exact', head: true });
-    return !error;
+    // 判断能否访问 Supabase API 服务
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch('https://uydyblzlphwnqsfkiuwj.supabase.co/auth/v1/settings', {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    return true; // 能连上就算成功
   } catch {
     return false;
   }
