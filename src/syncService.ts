@@ -2,7 +2,7 @@
  * 云同步服务 — 将本地 IndexedDB 数据同步到 Supabase
  * 策略：双向同步，后写入者覆盖
  */
-import { supabase, type SyncStatus } from './supabaseClient';
+import { supabase } from './supabaseClient';
 import type {
   Activity, Elderly, ElderlyGroup,
   WeeklyPlan, WeeklyPlanCell, ActivityRecord,
@@ -44,15 +44,29 @@ export async function pullFromCloud(store: SyncStore<any>): Promise<number> {
   return data.length;
 }
 
+/** 获取当前用户 ID（v2 API 异步获取） */
+async function getUserId(): Promise<string | null> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user?.id || null;
+  } catch {
+    return null;
+  }
+}
+
 /** 推送数据到 Supabase */
 export async function pushToCloud(store: SyncStore<any>): Promise<number> {
   const items = await store.getAll();
   if (items.length === 0) return 0;
 
+  const userId = await getUserId();
+  if (!userId) throw new Error('请先登录后再同步');
+
   const now = new Date().toISOString();
   const rows = items.map((item: any) => ({
     id: item.id,
     data: item,
+    user_id: userId,
     updated_at: now,
   }));
 

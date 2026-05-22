@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Library, Users, Settings, Menu, X } from 'lucide-react';
+import { Calendar, Library, Users, Settings, Menu, X, LogIn, User, Loader2 } from 'lucide-react';
+import { useAuth } from '../../supabaseAuth';
 
 const navItems = [
   { path: '/', label: '周计划表', icon: Calendar },
@@ -11,6 +12,7 @@ const navItems = [
 
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
   return (
     <>
@@ -52,8 +54,28 @@ export default function Layout() {
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        {/* Version tag */}
-        <span className="hidden lg:inline text-xs text-white/30 ml-auto">v1.0</span>
+        {/* Login / User button */}
+        <div className="ml-auto flex items-center">
+          {authLoading ? (
+            <Loader2 className="w-4 h-4 text-white/50 animate-spin" />
+          ) : user ? (
+            <NavLink
+              to="/auth"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline max-w-[100px] truncate">{user.email}</span>
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/auth"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">登录</span>
+            </NavLink>
+          )}
+        </div>
       </header>
 
       {/* Mobile overlay + dropdown */}
@@ -80,6 +102,21 @@ export default function Layout() {
                   {item.label}
                 </NavLink>
               ))}
+              {/* Mobile login button */}
+              <NavLink
+                to="/auth"
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3.5 rounded-lg text-base font-bold transition-all duration-200 ${
+                    isActive
+                      ? 'bg-white/20 text-white shadow-sm'
+                      : 'text-white/60 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                {user ? <User className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+                {user ? user.email?.split('@')[0] || '已登录' : '登录'}
+              </NavLink>
             </nav>
           </div>
         </>

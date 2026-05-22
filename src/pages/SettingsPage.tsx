@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Download, Trash2, AlertTriangle, Database, Shield, HardDrive, Link2, Link2Off, CheckCircle2, Loader2, Image as ImageIcon, X, Plus, RotateCcw, Monitor, FolderOpen, RefreshCw, Cloud, Upload } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Download, Trash2, AlertTriangle, Database, Shield, HardDrive, Link2, Link2Off, CheckCircle2, Loader2, Image as ImageIcon, X, Plus, RotateCcw, Monitor, FolderOpen, RefreshCw, Cloud, Upload, LogIn, User } from 'lucide-react';
+import { useAuth } from '../supabaseAuth';
 import { getAll, clearStore } from '../db';
 import { useActivityRecordStore } from '../store/activityRecordStore';
 import { exportToExcel } from '../utils/helpers';
@@ -597,6 +599,7 @@ function CloudSyncSection() {
   const [status, setStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [msg, setMsg] = useState('');
   const [connected, setConnected] = useState<boolean | null>(null);
+  const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
     import('../syncService').then(({ checkConnection }) => {
@@ -605,6 +608,11 @@ function CloudSyncSection() {
   }, []);
 
   const handleSync = async () => {
+    if (!user) {
+      setStatus('error');
+      setMsg('请先登录后再同步');
+      return;
+    }
     setStatus('syncing');
     setMsg('正在同步...');
     try {
@@ -618,6 +626,12 @@ function CloudSyncSection() {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    setStatus('idle');
+    setMsg('');
+  };
+
   return (
     <div className="bg-white rounded-xl border border-warm-100 p-5">
       <h2 className="font-bold text-warm-800 mb-4 flex items-center gap-2">
@@ -625,7 +639,33 @@ function CloudSyncSection() {
         云同步
       </h2>
 
-      {/* 连接状态 */}
+      {/* 登录状态 */}
+      <div className="flex items-center justify-between py-2 px-3 bg-warm-50 rounded-lg mb-3">
+        <span className="text-sm text-warm-600">
+          {authLoading ? '加载中...' : user ? user.email : '未登录'}
+        </span>
+        {authLoading ? (
+          <Loader2 className="w-4 h-4 text-warm-400 animate-spin" />
+        ) : user ? (
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1 px-2.5 py-1 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <LogIn className="w-3 h-3 rotate-180" />
+            退出
+          </button>
+        ) : (
+          <NavLink
+            to="/auth"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs text-warm-500 hover:bg-warm-100 rounded-lg transition-colors"
+          >
+            <LogIn className="w-3 h-3" />
+            登录
+          </NavLink>
+        )}
+      </div>
+
+      {/* Supabase 连接状态 */}
       <div className="flex items-center justify-between py-2 px-3 bg-warm-50 rounded-lg mb-3">
         <span className="text-sm text-warm-600">Supabase 连接</span>
         {connected === null ? (
@@ -646,7 +686,7 @@ function CloudSyncSection() {
       {/* 同步按钮 & 状态 */}
       <button
         onClick={handleSync}
-        disabled={status === 'syncing' || connected === false}
+        disabled={status === 'syncing' || connected === false || !user}
         className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left disabled:opacity-50"
         style={{
           backgroundColor: status === 'error' ? '#fef2f2' : status === 'success' ? '#f0fdf4' : '#fffbeb',
@@ -659,18 +699,21 @@ function CloudSyncSection() {
         )}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-warm-700">
-            {status === 'syncing' ? '同步中...' : '开始同步'}
+            {status === 'syncing' ? '同步中...' : !user ? '请先登录' : '开始同步'}
           </p>
           <p className="text-xs text-warm-400 truncate">
             {msg || (connected === false
-              ? 'Supabase 未连接，请检查数据库配置'
-              : '将本地数据同步到 Supabase 云端')}
+              ? 'Supabase 未连接'
+              : !user
+                ? '点击上方「登录」按钮注册/登录账号'
+                : '将本地数据同步到你的个人云端空间')}
           </p>
         </div>
       </button>
 
       <p className="text-xs text-warm-400 mt-2 leading-relaxed">
-        同步前请确保网络畅通。数据以最后一次修改为准。
+        登录后数据将同步到你的账号，不同账号数据完全隔离。
+        换设备只需登录同一账号即可恢复数据。
       </p>
     </div>
   );
