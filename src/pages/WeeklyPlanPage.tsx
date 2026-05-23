@@ -133,29 +133,41 @@ export default function WeeklyPlanPage() {
       const canvas = await html2canvas(element, {
         scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
         onclone: (clonedDoc: Document) => {
-          // 1. 打印专用元素（hidden print:*）→ 去掉 hidden，让截图可见
-          clonedDoc.querySelectorAll('[class*="print:"]').forEach((el) => {
-            const cls = el.className;
-            // 确认为独立 hidden 类（不是 print:hidden 的一部分）
-            if (/(?:^|\\s)hidden(?:\\s|$)/.test(cls)) {
-              el.className = cls.replace(/(?:^|\\s)hidden(?:\\s|$)/g, ' ').replace(/\\s+/g, ' ').trim();
-            }
+          // 1. 打印专用元素（hidden print:block/flex）→ 去 hidden，让截图可见
+          ['.hidden.print\\:block', '.hidden.print\\:flex'].forEach((sel) => {
+            clonedDoc.querySelectorAll(sel).forEach((el) => {
+              el.className = el.className
+                .replace(/(?:^|\\s)hidden(?:\\s|$)/g, ' ')
+                .replace(/\\s+/g, ' ')
+                .trim();
+            });
           });
           // 2. 移除所有打印时隐藏的 UI 元素（no-print、print:hidden）
           clonedDoc.querySelectorAll('.no-print, .print\\:hidden').forEach((el) => {
-            el.parentNode?.removeChild(el);
+            const p = el.parentNode;
+            if (p) p.removeChild(el);
+            else console.warn('[PDF] 无法移除元素:', el.className);
           });
-          // 3. 所有 textarea 替换为纯文本 div（textareas只显示2行，截不全）
+          // 3. textarea → 纯文本 div（完整显示内容）
           clonedDoc.querySelectorAll('textarea').forEach((ta) => {
+            const p = ta.parentNode;
+            if (!p) { console.warn('[PDF] textarea 无父节点，跳过'); return; }
             const div = clonedDoc.createElement('div');
             div.textContent = (ta as HTMLTextAreaElement).value || '';
-            div.className = ta.className.replace(/(?:^|\s)no-print(?:\s|$)/g, ' ').trim();
-            div.style.cssText = ta.style.cssText + ';min-height:auto;overflow:visible;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;height:auto;';
-            ta.parentNode?.replaceChild(div, ta);
+            // 去掉 no-print、print:hidden 等打印控制类
+            div.className = ta.className
+              .replace(/(?:^|\\s)no-print(?:\\s|$)/g, ' ')
+              .replace(/(?:^|\\s)print\\:hidden(?:\\s|$)/g, ' ')
+              .trim();
+            div.style.cssText = ta.style.cssText +
+              ';min-height:auto;overflow:visible;white-space:pre-wrap;' +
+              'word-break:break-word;overflow-wrap:break-word;height:auto;';
+            p.replaceChild(div, ta);
           });
-          // 3. 整体内容下移 0.5cm
+          // 4. 整体下移 0.5cm（追加，不覆盖已有 padding）
           const root = clonedDoc.querySelector('[data-export-root]') || clonedDoc.body;
-          root.style.paddingTop = '0.5cm';
+          const curPt = root.style.paddingTop || '0';
+          root.style.paddingTop = `calc(${curPt} + 0.5cm)`;
         },
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
