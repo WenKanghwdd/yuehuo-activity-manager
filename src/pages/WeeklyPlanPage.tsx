@@ -133,8 +133,8 @@ export default function WeeklyPlanPage() {
       const canvas = await html2canvas(element, {
         scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
         onclone: (clonedDoc: Document) => {
-          // 1. 移除所有打印时隐藏的 UI 元素（小X、编辑按钮等）
-          clonedDoc.querySelectorAll('.print\\:hidden').forEach((el) => {
+          // 1. 移除所有打印/导出时隐藏的 UI 元素（no-print、print:hidden）
+          clonedDoc.querySelectorAll('.no-print, .print\\:hidden').forEach((el) => {
             el.parentNode?.removeChild(el);
           });
           // 2. 所有 textarea 替换为纯文本 div（textareas只显示2行，截不全）
@@ -1027,11 +1027,8 @@ export default function WeeklyPlanPage() {
 
         {/* ===== 天气变化提醒 ===== */}
         {templ?.hasWeather !== false && (
-        <div className="mt-3 print:mt-2">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="text-xl font-black text-warm-700 " style={{fontFamily:"Microsoft YaHei,MicrosoftYaHei,sans-serif"}}>🌤 天气变化提醒</span>
-          </div>
-          {/* 天气预设 — 南京地区 */}
+        <div className="mt-1">
+          {/* 天气预设 — 只在屏幕显示 */}
           <div className="flex flex-wrap justify-center gap-1.5 mb-2 no-print">
             {[
               '晴好☀️ 气温15-22°C，适宜户外活动',
@@ -1070,7 +1067,7 @@ export default function WeeklyPlanPage() {
                 });
               }
             }}
-            className="w-full text-center text-xl print:text-2xl font-black text-warm-700  outline-none"
+            className="w-full text-center text-xl print:text-base font-bold text-warm-700 outline-none"
             style={{fontFamily:'SimSun,serif', minHeight:'1.5em'}}
           >
             {currentPlan?.weatherReminder || '点击此处添加天气变化提醒...'}
