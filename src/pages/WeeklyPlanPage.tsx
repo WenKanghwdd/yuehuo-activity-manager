@@ -132,6 +132,16 @@ export default function WeeklyPlanPage() {
       const element = printRef.current;
       const canvas = await html2canvas(element, {
         scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
+        onclone: (clonedDoc: Document) => {
+          // 截图前把所有 textarea 替换为纯文本 div（textarea 只显示2行，截不全）
+          clonedDoc.querySelectorAll('textarea').forEach((ta) => {
+            const div = clonedDoc.createElement('div');
+            div.textContent = (ta as HTMLTextAreaElement).value || '';
+            div.className = ta.className.replace(/(?:^|\s)no-print(?:\s|$)/g, ' ').trim();
+            div.style.cssText = ta.style.cssText + ';min-height:auto;overflow:visible;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;height:auto;';
+            ta.parentNode?.replaceChild(div, ta);
+          });
+        },
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF('l', 'mm', 'a4');
