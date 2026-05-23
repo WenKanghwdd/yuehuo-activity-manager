@@ -1027,7 +1027,7 @@ export default function WeeklyPlanPage() {
 
         {/* ===== 天气变化提醒 ===== */}
         {templ?.hasWeather !== false && (
-        <div className="mt-1">
+        <div className="mt-3">
           {/* 天气预设 — 只在屏幕显示 */}
           <div className="flex flex-wrap justify-center gap-1.5 mb-2 no-print">
             {[
