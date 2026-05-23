@@ -960,21 +960,45 @@ export default function WeeklyPlanPage() {
 
                       {/* ===== 备注/提醒 — 绿色突出（始终显示） ===== */}
                       <div>
+                        {/* 编辑用 textarea（屏幕显示） */}
                         <textarea
-                          value={cell?.note || ''}
+                          defaultValue={cell?.note || ''}
                           onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => doUpdateCell(slotId, day as Weekday, { note: e.target.value })}
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            if (val !== (cell?.note || '')) {
+                              doUpdateCell(slotId, day as Weekday, { note: val });
+                            }
+                          }}
                           placeholder="提醒..."
                           rows={2}
-                          className={`w-full text-center text-xs leading-tight px-1 py-0.5 rounded resize-vertical outline-none ${
+                          className={`w-full text-center text-xs leading-tight px-1 py-0.5 rounded resize-vertical outline-none break-words no-print ${
                             outdoor ? 'text-red-600 font-semibold' : 'text-warm-500'
                           }`}
                           style={{
                             minHeight: '24px',
                             backgroundColor: outdoor ? '#fef2f2' : '#f0fdf4',
                             borderLeft: outdoor ? '3px solid #ef4444' : '3px solid #22c55e',
+                            overflowWrap: 'break-word',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
                           }}
                         />
+                        {/* 打印用纯文本（完整显示） */}
+                        {cell?.note && (
+                          <div
+                            className="hidden print:block text-xs leading-snug px-1 py-0.5 text-center"
+                            style={{
+                              backgroundColor: outdoor ? '#fef2f2' : '#f0fdf4',
+                              borderLeft: outdoor ? '3px solid #ef4444' : '3px solid #22c55e',
+                              overflowWrap: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {cell.note}
+                          </div>
+                        )}
                       </div>
                     </td>
                   );
