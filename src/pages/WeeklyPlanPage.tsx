@@ -133,7 +133,11 @@ export default function WeeklyPlanPage() {
       const canvas = await html2canvas(element, {
         scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
         onclone: (clonedDoc: Document) => {
-          // 截图前把所有 textarea 替换为纯文本 div（textarea 只显示2行，截不全）
+          // 1. 移除所有打印时隐藏的 UI 元素（小X、编辑按钮等）
+          clonedDoc.querySelectorAll('.print\\:hidden').forEach((el) => {
+            el.parentNode?.removeChild(el);
+          });
+          // 2. 所有 textarea 替换为纯文本 div（textareas只显示2行，截不全）
           clonedDoc.querySelectorAll('textarea').forEach((ta) => {
             const div = clonedDoc.createElement('div');
             div.textContent = (ta as HTMLTextAreaElement).value || '';
@@ -141,6 +145,9 @@ export default function WeeklyPlanPage() {
             div.style.cssText = ta.style.cssText + ';min-height:auto;overflow:visible;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;height:auto;';
             ta.parentNode?.replaceChild(div, ta);
           });
+          // 3. 整体内容下移 0.5cm
+          const root = clonedDoc.querySelector('[data-export-root]') || clonedDoc.body;
+          root.style.paddingTop = '0.5cm';
         },
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -702,7 +709,7 @@ export default function WeeklyPlanPage() {
       )}
 
       {/* ===== 周计划表（打印区域，含标题） ===== */}
-      <div ref={printRef}
+      <div ref={printRef} data-export-root
         className="w-full mx-auto print-full-page overflow-x-auto">
 
         {/* 系统品牌标识 — 打印始终显示，不可移除 */}
@@ -743,7 +750,7 @@ export default function WeeklyPlanPage() {
           style={{ tableLayout: 'fixed', minWidth: '700px', borderColor: theme.border, backgroundColor: theme.bg }}>
           <colgroup>
             <col style={{ width: '70px' }} />
-            {[1, 2, 3, 4, 5, 6, 7].map((d) => <col key={d} style={{ width: 'auto' }} />)}
+            {[1, 2, 3, 4, 5, 6, 7].map((d) => <col key={d} style={{ width: 'calc((100% - 70px) / 7)' }} />)}
           </colgroup>
           <thead>
             <tr>
@@ -753,7 +760,7 @@ export default function WeeklyPlanPage() {
               </th>
               {([1, 2, 3, 4, 5, 6, 7] as const).map((day) => (
                 <th key={day} className="p-1.5 text-center font-black border-2 text-sm print:text-lg"
-                  style={{fontFamily:'SimHei,sans-serif', backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.border }}>
+                  style={{fontFamily:'SimHei,sans-serif', backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.border, width: `${100/7}%` }}>
                   <div>{WEEKDAY_NAMES[day]}</div>
                   <div className="text-[10px] font-normal opacity-80">
                     {currentPlan ? (() => {
