@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStaffStore } from '../store/staffStore';
 import { ChevronLeft, ChevronRight, Copy, Plus, X, Users, Calendar, Download } from 'lucide-react';
 import { generateId } from '../utils/helpers';
@@ -14,6 +14,14 @@ export default function StaffSchedulePage() {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPosition, setNewPosition] = useState('');
+  const [department, setDepartment] = useState(() => localStorage.getItem('staff_dept') || '');
+  const [editingDept, setEditingDept] = useState(false);
+  const [deptInput, setDeptInput] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('staff_dept', department);
+  }, [department]);
+
   const [editingStaff, setEditingStaff] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editPosition, setEditPosition] = useState('');
@@ -32,7 +40,7 @@ export default function StaffSchedulePage() {
       const { exportToPDF } = await import('../utils/pdfExport');
       await exportToPDF(scheduleTableRef.current, `排班表_${year}年${month}月`, {
         prefix: `悦活_排班表_${year}-${String(month).padStart(2,'0')}`,
-        margin: 5,
+        margin: 7.5,  // 0.75cm
         scale: 2,
         orientation: 'l',
       });
@@ -92,7 +100,7 @@ export default function StaffSchedulePage() {
     <div className="max-w-6xl mx-auto space-y-6">
       {/* 页头 + 操作 */}
       <div className="flex flex-wrap items-center justify-between gap-3 no-print">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button onClick={prevMonth} className="p-1.5 rounded hover:bg-warm-100 text-warm-500 transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -106,6 +114,25 @@ export default function StaffSchedulePage() {
             className="flex items-center gap-1 px-3 py-1.5 text-sm text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors">
             <Calendar className="w-4 h-4" /> 今天
           </button>
+          {/* 部门名称 — 点击编辑 */}
+          <div className="flex items-center gap-1 ml-1">
+            {editingDept ? (
+              <div className="flex items-center gap-1">
+                <input type="text" value={deptInput} onChange={e => setDeptInput(e.target.value)}
+                  className="w-24 px-2 py-1 text-xs border border-warm-200 rounded outline-none focus:ring-2 focus:ring-warm-400"
+                  placeholder="部门名称" autoFocus onKeyDown={e => { if (e.key === 'Enter') { setDepartment(deptInput.trim()); setEditingDept(false); } }} />
+                <button onClick={() => { setDepartment(deptInput.trim()); setEditingDept(false); }}
+                  className="text-[10px] text-green-600 hover:text-green-700">✓</button>
+                <button onClick={() => setEditingDept(false)}
+                  className="text-[10px] text-warm-400 hover:text-warm-600">✕</button>
+              </div>
+            ) : (
+              <button onClick={() => { setDeptInput(department); setEditingDept(true); }}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-warm-400 bg-white border border-dashed border-warm-200 rounded hover:bg-warm-50 hover:text-warm-600 transition-colors">
+                {department || '添加部门'}
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {staffList.length > 0 && (
@@ -175,6 +202,12 @@ export default function StaffSchedulePage() {
       {/* 排班表 */}
       {staffList.length > 0 && (
         <div ref={scheduleTableRef} className="overflow-x-auto rounded-xl border border-warm-100 bg-white shadow-sm print:border-0 print:shadow-none">
+          {/* PDF标题 — 只在打印/导出时显示 */}
+          <div className="hidden print:block text-center mb-4" style={{ paddingTop: '1cm' }}>
+            <h1 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'PingFang SC,Microsoft YaHei,sans-serif' }}>
+              {year}年{month}月{department ? department : ''}排班表
+            </h1>
+          </div>
           <table className="w-full text-sm" style={{ minWidth: '900px' }}>
             <thead>
               <tr>
