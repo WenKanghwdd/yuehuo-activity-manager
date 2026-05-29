@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [newTplName, setNewTplName] = useState('');
   const [newTplDesc, setNewTplDesc] = useState('');
   const [newTplSlots, setNewTplSlots] = useState(['morning', 'afternoon']);
+  const [newTplCustomSlots, setNewTplCustomSlots] = useState<{ id: string; label: string }[]>([]);
+  const [customSlotInput, setCustomSlotInput] = useState('');
   const [newTplNotes, setNewTplNotes] = useState(true);
   const [newTplWeather, setNewTplWeather] = useState(true);
   const templateStore = useTemplateStore();
@@ -372,7 +374,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-xs text-warm-500 mb-1.5">时间段</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {['morning', 'afternoon', 'evening'].map(sid => (
                   <label key={sid} className="flex items-center gap-1.5 px-3 py-1.5 border border-warm-200 rounded-lg cursor-pointer hover:bg-warm-50">
                     <input type="checkbox" checked={newTplSlots.includes(sid)}
@@ -381,6 +383,32 @@ export default function SettingsPage() {
                     <span className="text-sm text-warm-700">{{morning:'上午',afternoon:'下午',evening:'晚上'}[sid]}</span>
                   </label>
                 ))}
+                {/* 自定义时间段 */}
+                {newTplCustomSlots.map(cs => (
+                  <div key={cs.id} className="flex items-center gap-0.5 px-2 py-1 border border-purple-200 rounded-lg bg-purple-50">
+                    <span className="text-sm text-purple-700">{cs.label}</span>
+                    <button onClick={() => setNewTplCustomSlots(prev => prev.filter(s => s.id !== cs.id))}
+                      className="text-[10px] text-purple-400 hover:text-red-400 ml-0.5">✕</button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <input type="text" value={customSlotInput} onChange={e => setCustomSlotInput(e.target.value)}
+                  placeholder="自定义时间段（如：早班、夜班）"
+                  className="flex-1 px-2 py-1.5 text-xs border border-purple-200 rounded-lg outline-none focus:ring-2 focus:ring-warm-400"
+                  onKeyDown={e => { if (e.key === 'Enter' && customSlotInput.trim()) {
+                    setNewTplCustomSlots(prev => [...prev, { id: 'custom_' + Date.now(), label: customSlotInput.trim() }]);
+                    setCustomSlotInput('');
+                  }}} />
+                <button onClick={() => {
+                  if (customSlotInput.trim()) {
+                    setNewTplCustomSlots(prev => [...prev, { id: 'custom_' + Date.now(), label: customSlotInput.trim() }]);
+                    setCustomSlotInput('');
+                  }
+                }}
+                  className="px-2.5 py-1.5 text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors whitespace-nowrap">
+                  ＋ 添加
+                </button>
               </div>
             </div>
 
@@ -401,12 +429,16 @@ export default function SettingsPage() {
               <button onClick={() => setShowNewTemplateForm(false)}
                 className="px-4 py-2 border border-warm-200 rounded-lg text-sm text-warm-600 hover:bg-warm-50">取消</button>
               <button onClick={async () => {
-                if (!newTplName.trim() || newTplSlots.length === 0) return;
+                if (!newTplName.trim() || (newTplSlots.length === 0 && newTplCustomSlots.length === 0)) return;
                 const slotMap: Record<string, string> = { morning: '上午', afternoon: '下午', evening: '晚上' };
+                const timeSlots = [
+                  ...newTplSlots.map(s => ({ label: slotMap[s], slotId: s })),
+                  ...newTplCustomSlots.map(cs => ({ label: cs.label, slotId: cs.id })),
+                ];
                 await templateStore.addTemplate({
                   name: newTplName.trim(),
-                  description: newTplDesc || newTplSlots.map(s => slotMap[s]).join('+'),
-                  timeSlots: newTplSlots.map(s => ({ label: slotMap[s], slotId: s })),
+                  description: newTplDesc || timeSlots.map(s => s.label).join('+'),
+                  timeSlots,
                   weekdays: 7,
                   hasNotes: newTplNotes,
                   hasWeather: newTplWeather,
@@ -414,6 +446,8 @@ export default function SettingsPage() {
                 setNewTplName('');
                 setNewTplDesc('');
                 setNewTplSlots(['morning', 'afternoon']);
+                setNewTplCustomSlots([]);
+                setCustomSlotInput('');
                 setNewTplNotes(true);
                 setNewTplWeather(true);
                 setShowNewTemplateForm(false);

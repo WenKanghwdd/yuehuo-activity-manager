@@ -17,7 +17,11 @@ import { getDailySolarTerms } from '../utils/solarTerms';
 import { getMonthlyHolidays } from '../utils/holidays';
 import { exportToPDF } from '../utils/pdfExport';
 
-const SLOT_LABELS: Record<SlotId, string> = { morning: '上午', afternoon: '下午', evening: '晚上' };
+// 时间段标签：从模板中取，支持自定义时间段
+function getSlotLabel(slotId: string): string {
+  const labels: Record<string, string> = { morning: '上午', afternoon: '下午', evening: '晚上' };
+  return labels[slotId] || slotId.replace('custom_', '');
+}
 
 export default function WeeklyPlanPage() {
   const { currentPlan, loaded, loading, loadOrCreatePlan, updateCell, setTheme, setTimeRange, batchSetTimeRange, clearCell, setDayNote, batchSetDayNotes } =
@@ -636,7 +640,7 @@ export default function WeeklyPlanPage() {
                 const vals = uniTime[slotId];
                 return (
                   <div key={slotId} className="flex items-center gap-2">
-                    <span className="w-12 text-sm text-warm-700 font-medium shrink-0">{SLOT_LABELS[slotId]}</span>
+                    <span className="w-12 text-sm text-warm-700 font-medium shrink-0">{getSlotLabel(slotId)}</span>
                     <input type="time" value={vals.start}
                       onChange={(e) => setUniTime({ ...uniTime, [slotId]: { ...vals, start: e.target.value } })}
                       className="flex-1 px-2 py-1.5 border border-warm-200 rounded-lg text-sm" />
@@ -797,7 +801,7 @@ export default function WeeklyPlanPage() {
                 {/* 左侧时段标 — 只在这里显示时间 */}
                 <td className="p-2 text-center border-2 align-middle"
                   style={{ backgroundColor: theme.bg, color: theme.cellText, borderColor: theme.border }}>
-                  <div className="font-black text-lg">{SLOT_LABELS[slotId]}</div>
+                  <div className="font-black text-lg">{getSlotLabel(slotId)}</div>
                   <div className="text-[10px] text-warm-500 leading-tight flex flex-col items-center">
                     <span>{currentPlan?.timeConfig?.[1]?.[slotId]?.startTime || '?'}</span>
                     <span className="text-[8px] text-warm-400">至</span>
@@ -979,7 +983,7 @@ export default function WeeklyPlanPage() {
                             e.stopPropagation();
                             setVenueEditValue(cell?.venue || '');
                             venueStore.openVenueEditor(
-                              `${WEEKDAY_NAMES[day as Weekday]} ${SLOT_LABELS[slotId as SlotId]}`,
+                              `${WEEKDAY_NAMES[day as Weekday]} ${getSlotLabel(slotId)}`,
                               cell?.venue || '',
                               (v) => doUpdateCell(slotId, day as Weekday, { venue: v })
                             );
@@ -1095,7 +1099,7 @@ export default function WeeklyPlanPage() {
 
       {/* ===== 活动选择弹窗（主活动） ===== */}
       {pickSlot && renderActivityPicker({
-        title: `${WEEKDAY_NAMES[pickSlot.weekday as Weekday]} · ${SLOT_LABELS[pickSlot.slotId as SlotId]}`,
+        title: `${WEEKDAY_NAMES[pickSlot.weekday as Weekday]} · ${getSlotLabel(pickSlot.slotId)}`,
         onPick: handlePickActivity,
         onCustom: (name, venue) => {
           doUpdateCell(pickSlot.slotId, pickSlot.weekday as Weekday, { customText: name, venue });
@@ -1107,7 +1111,7 @@ export default function WeeklyPlanPage() {
 
       {/* ===== 活动选择弹窗（额外活动） ===== */}
       {extraPickSlot && renderActivityPicker({
-        title: `${WEEKDAY_NAMES[extraPickSlot.weekday as Weekday]} · ${SLOT_LABELS[extraPickSlot.slotId as SlotId]}（第二活动）`,
+        title: `${WEEKDAY_NAMES[extraPickSlot.weekday as Weekday]} · ${getSlotLabel(extraPickSlot.slotId)}（第二活动）`,
         onPick: handlePickExtraActivity,
         onCustom: (name, venue) => {
           const cell = getCell(extraPickSlot.slotId, extraPickSlot.weekday);
