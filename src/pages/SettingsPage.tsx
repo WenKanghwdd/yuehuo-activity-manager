@@ -521,6 +521,21 @@ export default function SettingsPage() {
         </div>
       </CollapsibleCard>
 
+      {/* 问题反馈 */}
+      <div className="bg-white rounded-xl border border-warm-100 p-5">
+        <h2 className="font-bold text-warm-800 flex items-center gap-2 mb-3">
+          <Shield className="w-5 h-5 text-warm-500" />
+          问题反馈
+        </h2>
+        <p className="text-sm text-warm-600 leading-relaxed">
+          如有问题或建议，请发送邮件至：
+        </p>
+        <a href="mailto:zhudihwdd@gmail.com"
+          className="inline-flex items-center gap-1 mt-2 px-4 py-2 bg-warm-50 rounded-lg text-sm text-warm-700 hover:bg-warm-100 transition-colors">
+          ✉️ zhudihwdd@gmail.com
+        </a>
+      </div>
+
       {/* About */}
       <div className="bg-white rounded-xl border border-warm-100 p-5">
         <h2 className="font-bold text-warm-800 mb-2">关于</h2>
