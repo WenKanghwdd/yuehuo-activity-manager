@@ -226,7 +226,7 @@ export default function StaffSchedulePage() {
         <div ref={scheduleTableRef} className="overflow-x-auto print:overflow-visible rounded-xl border border-warm-100 bg-white shadow-sm print:border-0 print:shadow-none">
           {/* PDF标题 — 只在打印/导出时显示 */}
           <div className="hidden print:block text-center mb-4" style={{ paddingTop: '1cm' }}>
-            <h1 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'PingFang SC,Microsoft YaHei,sans-serif' }}>
+            <h1 className="text-2xl font-bold" style={{ fontFamily: 'PingFang SC,Microsoft YaHei,sans-serif', color: '#7B68EE' }}>
               {year}年{month}月{department ? department : ''}排班表
             </h1>
           </div>
