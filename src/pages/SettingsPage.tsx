@@ -638,7 +638,7 @@ function CloudSyncSection() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-warm-100 p-5">
+    <div className="bg-white rounded-xl border border-warm-100 p-5 hidden">
       <h2 className="font-bold text-warm-800 mb-4 flex items-center gap-2">
         <Cloud className="w-5 h-5 text-warm-500" />
         云同步
