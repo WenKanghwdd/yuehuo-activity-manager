@@ -233,7 +233,7 @@ export default function StaffSchedulePage() {
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-white border-r border-b border-warm-200 px-1.5 py-1.5 text-left text-[9px] font-bold text-warm-600 print:text-[7px]" style={{ minWidth: '80px', width: '80px' }}>
+                <th className="sticky left-0 z-10 bg-white border-r border-b border-warm-200 px-2 py-2 text-left text-[11px] font-bold text-warm-600 print:text-[8px]" style={{ minWidth: '90px', width: '90px' }}>
                   姓名 <span className="text-[10px] text-warm-400 font-normal">(职位)</span>
                 </th>
                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => {
@@ -272,8 +272,8 @@ export default function StaffSchedulePage() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-warm-800 truncate">{staff.name}</span>
-                          <span className="text-[9px] text-warm-400 truncate">{staff.position}</span>
+                          <span className="text-sm font-medium text-warm-800 truncate">{staff.name}</span>
+                          <span className="text-[10px] text-warm-400 truncate">{staff.position}</span>
                           <button onClick={() => {
                             setEditingStaff(staff.id);
                             setEditName(staff.name);
