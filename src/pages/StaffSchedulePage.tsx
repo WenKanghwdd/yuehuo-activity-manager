@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStaffStore } from '../store/staffStore';
-import { ChevronLeft, ChevronRight, Copy, Plus, X, Users, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Plus, X, Users, Calendar, Download } from 'lucide-react';
 import { generateId } from '../utils/helpers';
 
 const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
@@ -21,6 +21,28 @@ export default function StaffSchedulePage() {
   useEffect(() => {
     if (!loaded) loadStaff();
   }, [loaded]);
+
+  const scheduleTableRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    if (!scheduleTableRef.current || staffList.length === 0) return;
+    setExporting(true);
+    try {
+      const { exportToPDF } = await import('../utils/pdfExport');
+      await exportToPDF(scheduleTableRef.current, `排班表_${year}年${month}月`, {
+        prefix: `悦活_排班表_${year}-${String(month).padStart(2,'0')}`,
+        margin: 5,
+        scale: 2,
+        orientation: 'p',
+      });
+    } catch (e: any) {
+      console.error('导出PDF失败:', e);
+      alert('导出PDF失败: ' + (e.message || '未知错误'));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const daysInMonth = new Date(year, month, 0).getDate();
 
@@ -80,10 +102,17 @@ export default function StaffSchedulePage() {
         </div>
         <div className="flex items-center gap-2">
           {staffList.length > 0 && (
-            <button onClick={handleCopyPrev}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors">
-              <Copy className="w-4 h-4" /> 复制上月排班
-            </button>
+            <>
+              <button onClick={handleCopyPrev}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors">
+                <Copy className="w-4 h-4" /> 复制上月排班
+              </button>
+              <button onClick={handleExportPDF} disabled={exporting}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #7B68EE 0%, #E6A8D7 100%)' }}>
+                <Download className="w-4 h-4" /> {exporting ? '导出中...' : '导出PDF'}
+              </button>
+            </>
           )}
           <button onClick={() => setShowAddStaff(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm text-white rounded-lg transition-colors"
@@ -138,7 +167,7 @@ export default function StaffSchedulePage() {
 
       {/* 排班表 */}
       {staffList.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-warm-100 bg-white shadow-sm print:border-0 print:shadow-none">
+        <div ref={scheduleTableRef} className="overflow-x-auto rounded-xl border border-warm-100 bg-white shadow-sm print:border-0 print:shadow-none">
           <table className="w-full text-sm" style={{ minWidth: '900px' }}>
             <thead>
               <tr>
