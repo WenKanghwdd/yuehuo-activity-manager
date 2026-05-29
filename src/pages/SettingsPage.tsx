@@ -479,9 +479,6 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* 账号管理 */}
-      <AccountSection />
-
       {/* Data Management */}
       <CollapsibleCard title={
         <h2 className="font-bold text-warm-800">数据管理</h2>
