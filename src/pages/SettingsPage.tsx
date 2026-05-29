@@ -522,11 +522,12 @@ export default function SettingsPage() {
       </CollapsibleCard>
 
       {/* 问题反馈 */}
-      <div className="bg-white rounded-xl border border-warm-100 p-5">
-        <h2 className="font-bold text-warm-800 flex items-center gap-2 mb-3">
+      <CollapsibleCard title={
+        <h2 className="font-bold text-warm-800 flex items-center gap-2">
           <Shield className="w-5 h-5 text-warm-500" />
           问题反馈
         </h2>
+      }>
         <p className="text-sm text-warm-600 leading-relaxed mb-3">
           如有问题或建议，请通过以下方式联系：
         </p>
@@ -559,7 +560,7 @@ export default function SettingsPage() {
             <p className="text-xs text-warm-500 mt-1">微信</p>
           </div>
         </div>
-      </div>
+      </CollapsibleCard>
 
       {/* About */}
       <div className="bg-white rounded-xl border border-warm-100 p-5">
