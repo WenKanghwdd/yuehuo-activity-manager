@@ -105,6 +105,25 @@ export interface ActivityRecord {
   status: ParticipationStatus;
 }
 
+// ===== 员工排班 =====
+export interface Staff {
+  id: string;
+  name: string;
+  position: string; // 职位：经理/社工/实习生...
+}
+
+/** 按月排班，key = 'YYYY-MM-DD' */
+export type StaffSchedule = Record<string, '上班' | '休息'>;
+
+/** 某月某员工排班数据 */
+export interface StaffMonthSchedule {
+  id: string; // `${year}-${month}-${staffId}`
+  staffId: string;
+  year: number;
+  month: number; // 1-12
+  schedule: StaffSchedule;
+}
+
 // ===== 默认时间段（早中晚各一个，时间可调） =====
 export type SlotId = 'morning' | 'afternoon' | 'evening';
 

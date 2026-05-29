@@ -181,6 +181,8 @@ export default function SettingsPage() {
     await clearStore('elderly');
     await clearStore('elderlyGroups');
     await clearStore('activities');
+    await clearStore('staff');
+    await clearStore('staffSchedules');
     setMessage('已清空所有数据');
     setTimeout(() => setMessage(''), 3000);
     loadStats();

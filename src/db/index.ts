@@ -40,6 +40,14 @@ export async function getDB(): Promise<IDBPDatabase> {
         recordStore.createIndex('date', 'date', { unique: false });
         recordStore.createIndex('elderlyId_date', ['elderlyId', 'date'], { unique: false });
       }
+      // 员工
+      if (!db.objectStoreNames.contains('staff')) {
+        db.createObjectStore('staff', { keyPath: 'id' });
+      }
+      // 员工排班
+      if (!db.objectStoreNames.contains('staffSchedules')) {
+        db.createObjectStore('staffSchedules', { keyPath: 'id' });
+      }
       // 设置
       if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'key' });

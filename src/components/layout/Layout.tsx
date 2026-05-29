@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Library, Users, Settings, Menu, X, LogIn, User, Loader2 } from 'lucide-react';
+import { Calendar, Library, Users, Settings, Menu, X, LogIn, User, Loader2, ClipboardList } from 'lucide-react';
 import { useLazyAuth } from '../../hooks/useLazyAuth';
 
 const navItems = [
   { path: '/', label: '活动计划', icon: Calendar },
   { path: '/activities', label: '活动库', icon: Library },
   { path: '/elderly', label: '长者管理', icon: Users },
+  { path: '/schedule', label: '员工排班', icon: ClipboardList },
   { path: '/settings', label: '设置', icon: Settings },
 ];
 

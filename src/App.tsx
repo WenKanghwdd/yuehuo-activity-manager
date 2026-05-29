@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout';
 import WeeklyPlanPage from './pages/WeeklyPlanPage';
 import ActivityLibraryPage from './pages/ActivityLibraryPage';
 import ElderlyPage from './pages/ElderlyPage';
+import StaffSchedulePage from './pages/StaffSchedulePage';
 import AuthPage from './pages/AuthPage';
 import SettingsPage from './pages/SettingsPage';
 import ActivationDialog from './components/common/ActivationDialog';
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/" element={<WeeklyPlanPage />} />
             <Route path="/activities" element={<ActivityLibraryPage />} />
             <Route path="/elderly" element={<ElderlyPage />} />
+            <Route path="/schedule" element={<StaffSchedulePage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
