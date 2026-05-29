@@ -34,7 +34,7 @@ export default function StaffSchedulePage() {
         prefix: `悦活_排班表_${year}-${String(month).padStart(2,'0')}`,
         margin: 5,
         scale: 2,
-        orientation: 'p',
+        orientation: 'l',
       });
     } catch (e: any) {
       console.error('导出PDF失败:', e);
