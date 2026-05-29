@@ -179,6 +179,13 @@ export async function restoreFromFile(handle: FileSystemFileHandle): Promise<Exp
  */
 export async function verifyHandle(handle: FileSystemFileHandle): Promise<boolean> {
   try {
+    const h = handle as any;
+    // 先检查权限，过期则重新申请
+    const opts = { mode: 'readwrite' };
+    if ((await h.queryPermission(opts)) !== 'granted') {
+      const result = await h.requestPermission(opts);
+      if (result !== 'granted') return false;
+    }
     await handle.getFile();
     return true;
   } catch {
