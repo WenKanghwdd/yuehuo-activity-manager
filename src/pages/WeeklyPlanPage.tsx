@@ -136,8 +136,55 @@ export default function WeeklyPlanPage() {
   const [viewYear, setViewYear] = useState(nowDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(nowDate.getMonth() + 1);
   const monthlyPrintRef = useRef<HTMLDivElement>(null);
+  const [allMonthPlans, setAllMonthPlans] = useState<Record<string, string[]>>({});
   const solarTerms = getDailySolarTerms(viewYear, viewMonth);
   const monthHolidays = getMonthlyHolidays(viewYear, viewMonth);
+
+  // 按月加载所有周计划（月视图用）
+  useEffect(() => {
+    if (viewMode !== 'monthly') return;
+    const loadMonthPlans = async () => {
+      const { getAll } = await import('../db');
+      const plans: any[] = await getAll('weeklyPlans');
+      const tpl = templateStore.getCurrentTemplate();
+      const hTabs = tpl?.id === 'grouped' && tpl.groupLabels;
+      const mSlots: SlotId[] = (tpl?.timeSlots.map(s => s.slotId as SlotId)) || ['morning', 'afternoon'];
+      const prefix = hTabs ? `tab${activeTab}-` : '';
+      const result: Record<string, string[]> = {};
+      for (const plan of plans) {
+        const mondayDate = new Date(plan.weekStart);
+        // 检查该周是否与当前月有交集（周可能跨月）
+        const weekEnd = new Date(mondayDate);
+        weekEnd.setDate(mondayDate.getDate() + 6);
+        const startMonth = mondayDate.getMonth() + 1;
+        const endMonth = weekEnd.getMonth() + 1;
+        if (startMonth !== viewMonth && endMonth !== viewMonth) continue;
+        if (mondayDate.getFullYear() !== viewYear && weekEnd.getFullYear() !== viewYear) continue;
+
+        for (const d of [1,2,3,4,5,6,7] as Weekday[]) {
+          for (const s of mSlots) {
+            const key = prefix + s + '-' + d;
+            const cell = plan.cells[key];
+            if (!cell) continue;
+            const cellDate = new Date(mondayDate);
+            cellDate.setDate(mondayDate.getDate() + d - 1);
+            // 只取属于当前月的日期
+            if (cellDate.getMonth() + 1 !== viewMonth || cellDate.getFullYear() !== viewYear) continue;
+            const dateKeyStr = cellDate.getFullYear() + '-' +
+              String(cellDate.getMonth() + 1).padStart(2, '0') + '-' +
+              String(cellDate.getDate()).padStart(2, '0');
+            if (!result[dateKeyStr]) result[dateKeyStr] = [];
+            const name = cell.customText || (
+              cell.activityId ? (activities.find(a => a.id === cell.activityId)?.name || '') : ''
+            );
+            if (name) result[dateKeyStr].push(name);
+          }
+        }
+      }
+      setAllMonthPlans(result);
+    };
+    loadMonthPlans();
+  }, [viewMode, viewYear, viewMonth, activeTab, currentPlan?.id, activities, templateStore.currentTemplateId]);
 
   const handleExportPDF = useCallback(async () => {
     setPrinting(true);
@@ -1242,8 +1289,6 @@ export default function WeeklyPlanPage() {
         </div>
       )}
 
-      {/* ===== 
-
       {/* ===== 月计划表 ===== */}
       {viewMode === 'monthly' && (
         <div ref={monthlyPrintRef} data-export-root
@@ -1261,30 +1306,15 @@ export default function WeeklyPlanPage() {
               </>
             )}
           </div>
+          {/* 月计划标题 */}
+          <div className="text-center mb-4 print:mb-3">
+            <h2 className="text-xl print:text-2xl font-black text-warm-800" style={{fontFamily:"Microsoft YaHei,MicrosoftYaHei,sans-serif"}}>
+              {viewYear}年{viewMonth}月活动计划表
+            </h2>
+          </div>
           {(() => {
-            const monthlyActivities: Record<string, string[]> = {};
-            if (currentPlan) {
-              const prefix = hasTabs ? `tab${activeTab}-` : '';
-              const mondayStr = getMonday(new Date(currentPlan.weekStart));
-              const mondayDate = new Date(mondayStr);
-              for (const d of [1,2,3,4,5,6,7] as Weekday[]) {
-                for (const s of activeSlots) {
-                  const key = prefix + s + '-' + d;
-                  const cell = currentPlan.cells[key];
-                  if (!cell) continue;
-                  const cellDate = new Date(mondayDate);
-                  cellDate.setDate(mondayDate.getDate() + d - 1);
-                  const dateKeyStr = cellDate.getFullYear() + '-' +
-                    String(cellDate.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(cellDate.getDate()).padStart(2, '0');
-                  if (!monthlyActivities[dateKeyStr]) monthlyActivities[dateKeyStr] = [];
-                  const name = cell.customText || (
-                    cell.activityId ? (activities.find(a => a.id === cell.activityId)?.name || '') : ''
-                  );
-                  if (name) monthlyActivities[dateKeyStr].push(name);
-                }
-              }
-            }
+            const monthlyActivities: Record<string, string[]> = allMonthPlans;
+
             return (
               <MonthlyCalendar
                 year={viewYear}
