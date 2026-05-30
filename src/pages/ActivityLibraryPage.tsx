@@ -13,6 +13,8 @@ import Modal from '../components/common/Modal';
 const TAG_COLORS = [
   '#dc2626', '#ea580c', '#d97706', '#16a34a', '#059669',
   '#2563eb', '#7c3aed', '#db2777', '#e91e63', '#0891b2',
+  '#F5F0FF', '#D9CCF1', '#A98BCD', '#6D558C',
+  '#FFF7EA', '#EAC89D', '#C5905A', '#7A5332',
 ];
 
 export default function ActivityLibraryPage() {
@@ -309,16 +311,24 @@ export default function ActivityLibraryPage() {
           <div className="flex items-center gap-2">
             <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
               placeholder="新标签名称..." className="flex-1 px-3 py-2 border border-warm-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-400" />
-            <div className="flex gap-1">
-              {TAG_COLORS.map(c => (
-                <button key={c} onClick={() => setNewTagColor(c)}
-                  className="w-6 h-6 rounded-full border-2 transition-all"
-                  style={{
-                    backgroundColor: c,
-                    borderColor: newTagColor === c ? '#333' : 'transparent',
-                    transform: newTagColor === c ? 'scale(1.2)' : 'scale(1)',
-                  }} />
-              ))}
+            <div className="relative">
+              <button onClick={() => setColorPickerTag(colorPickerTag === '__new__' ? null : '__new__')}
+                className="w-7 h-7 rounded-full border-2 border-gray-300 transition-transform hover:scale-110"
+                style={{ backgroundColor: newTagColor }} />
+              {colorPickerTag === '__new__' && (
+                <div className="absolute right-0 top-full mt-1 z-10 bg-white border border-warm-200 rounded-lg shadow-lg p-2 grid grid-cols-5 gap-1.5"
+                  onMouseLeave={() => setColorPickerTag(null)}>
+                  {TAG_COLORS.map(c => (
+                    <button key={c} onClick={() => { setNewTagColor(c); setColorPickerTag(null); }}
+                      className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                      style={{
+                        backgroundColor: c,
+                        outline: newTagColor === c ? '2px solid #333' : 'none',
+                        outlineOffset: '2px',
+                      }} />
+                  ))}
+                </div>
+              )}
             </div>
             <button onClick={handleAddTag} disabled={!newTagName.trim()}
               className="px-3 py-2 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 disabled:opacity-50">添加</button>
@@ -380,7 +390,7 @@ export default function ActivityLibraryPage() {
                       <button onClick={() => setColorPickerTag(colorPickerTag === tag ? null : tag)}
                         className="px-2 py-1 text-[10px] border border-warm-200 rounded hover:bg-warm-100">改色</button>
                       {colorPickerTag === tag && (
-                        <div className="absolute right-0 top-full mt-1 z-10 bg-white border border-warm-200 rounded-lg shadow-lg p-2 flex gap-1"
+                        <div className="absolute right-0 top-full mt-1 z-10 bg-white border border-warm-200 rounded-lg shadow-lg p-2 grid grid-cols-5 gap-1.5"
                           onMouseLeave={() => setColorPickerTag(null)}>
                           {TAG_COLORS.map(c => (
                             <button key={c} onClick={async () => {
